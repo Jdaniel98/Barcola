@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cmath>
 #include "risk/slippage_model.h"
 
 using namespace barcola;
