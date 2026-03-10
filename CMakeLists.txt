@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(CURL REQUIRED)
 
 add_subdirectory(src)
+add_subdirectory(strategies)
 
 option(BARCOLA_BUILD_TESTS "Build tests" ON)
 if(BARCOLA_BUILD_TESTS)
