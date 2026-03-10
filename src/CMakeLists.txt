@@ -12,6 +12,8 @@ add_library(barcola STATIC
     risk/slippage_model.cpp
     risk/dynamic_hedging.cpp
     simulation/monte_carlo.cpp
+    backtest/performance.cpp
+    backtest/backtest_engine.cpp
 )
 
 target_include_directories(barcola PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
