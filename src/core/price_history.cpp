@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -320,70 +319,6 @@ void PriceHistory::saveToCsv(const std::string& filepath) const {
         file << dp.getDateString() << "," << dp.getOpening() << "," << dp.getHighest() << ","
              << dp.getLowest() << "," << dp.getClosing() << "\n";
     }
-}
-
-// --- Technical calculations ---
-
-std::pair<std::vector<double>, std::vector<double>> PriceHistory::calculateSMA(
-    size_t windowSize) const {
-    const size_t dataSize = dataPoints_.size();
-    std::vector<double> smaValues(dataSize, 0.0);
-
-    for (size_t i = windowSize - 1; i < dataSize; ++i) {
-        double sum = 0.0;
-        for (size_t j = i - windowSize + 1; j <= i; ++j) {
-            sum += dataPoints_[j].getClosing();
-        }
-        smaValues[i] = sum / static_cast<double>(windowSize);
-    }
-
-    return {smaValues, {}};
-}
-
-std::pair<std::vector<double>, std::vector<double>> PriceHistory::calculateEMA(
-    size_t windowSize, double emaSmoothingFactor) const {
-    const size_t dataSize = dataPoints_.size();
-    if (dataSize < windowSize) {
-        return {{}, {}};
-    }
-
-    std::vector<double> emaValues(dataSize, 0.0);
-    emaValues[windowSize - 1] = dataPoints_[windowSize - 1].getClosing();
-
-    for (size_t i = windowSize; i < dataSize; ++i) {
-        emaValues[i] = emaSmoothingFactor * dataPoints_[i].getClosing() +
-                       (1.0 - emaSmoothingFactor) * emaValues[i - 1];
-    }
-
-    return {{}, emaValues};
-}
-
-// FIX: Returns both upper AND lower bands (original only returned upper)
-std::pair<std::vector<double>, std::vector<double>> PriceHistory::calculateBollingerBands(
-    size_t period, double stdDevFactor) const {
-    std::vector<double> bollingerUpper;
-    std::vector<double> bollingerLower;
-    const size_t dataSize = dataPoints_.size();
-
-    for (size_t i = period - 1; i < dataSize; ++i) {
-        double sum = 0.0;
-        for (size_t j = i - period + 1; j <= i; ++j) {
-            sum += dataPoints_[j].getClosing();
-        }
-        const double movingAvg = sum / static_cast<double>(period);
-
-        double squaredDiffSum = 0.0;
-        for (size_t j = i - period + 1; j <= i; ++j) {
-            const double diff = dataPoints_[j].getClosing() - movingAvg;
-            squaredDiffSum += diff * diff;
-        }
-        const double stdDev = std::sqrt(squaredDiffSum / static_cast<double>(period));
-
-        bollingerUpper.push_back(movingAvg + stdDevFactor * stdDev);
-        bollingerLower.push_back(movingAvg - stdDevFactor * stdDev);
-    }
-
-    return {bollingerUpper, bollingerLower};
 }
 
 }  // namespace barcola

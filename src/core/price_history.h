@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "core/price_point.h"
@@ -39,14 +38,6 @@ public:
                              const std::string& interval);
     void loadFromCsv(const std::string& filepath);
     void saveToCsv(const std::string& filepath) const;
-
-    // Technical calculations (kept on PriceHistory for backward compatibility)
-    [[nodiscard]] std::pair<std::vector<double>, std::vector<double>> calculateSMA(
-        size_t windowSize) const;
-    [[nodiscard]] std::pair<std::vector<double>, std::vector<double>> calculateEMA(
-        size_t windowSize, double emaSmoothingFactor) const;
-    [[nodiscard]] std::pair<std::vector<double>, std::vector<double>> calculateBollingerBands(
-        size_t period, double stdDevFactor) const;
 
 private:
     std::string assetSymbol_;
