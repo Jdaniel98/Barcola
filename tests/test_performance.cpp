@@ -128,3 +128,32 @@ TEST(PerformanceTest, TradeStats_MixedTrades) {
     EXPECT_NEAR(stats.avgLoss, 200.0, 1e-10);
     EXPECT_NEAR(stats.profitFactor, 800.0 / 200.0, 1e-10);  // 4.0
 }
+
+TEST(PerformanceTest, TradeStats_AllWinners_InfiniteProfitFactor) {
+    // Regression: no losing trades used to give profit factor 0, the same as the worst case
+    Trade win;
+    win.pnl = 100.0;
+    const auto stats = analyzeTradeHistory({win, win});
+    EXPECT_TRUE(std::isinf(stats.profitFactor));
+    EXPECT_GT(stats.profitFactor, 0.0);
+}
+
+// --- Annualized return ---
+
+TEST(PerformanceTest, AnnualizeReturn_TwoYears) {
+    // 21% over 504 daily returns (two years) is 10% a year
+    EXPECT_NEAR(annualizeReturn(0.21, 504), 0.10, 1e-12);
+}
+
+TEST(PerformanceTest, AnnualizeReturn_EdgeCases) {
+    EXPECT_DOUBLE_EQ(annualizeReturn(0.05, 0), 0.0);
+    EXPECT_DOUBLE_EQ(annualizeReturn(-1.0, 252), -1.0);
+}
+
+TEST(PerformanceTest, CalmarRatio_UsesSameAnnualizationAsEngine) {
+    // Regression: the engine counted N bars and Calmar counted N-1 returns
+    std::vector<double> equity = {100.0, 120.0, 90.0, 110.0};
+    const double annual = annualizeReturn(0.10, equity.size() - 1);
+    const double maxDD = calculateMaxDrawdown(equity);  // 120 -> 90 = 25%
+    EXPECT_NEAR(calculateCalmarRatio(equity), annual / maxDD, 1e-12);
+}

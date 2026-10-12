@@ -2,12 +2,24 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
 
 #include "core/time_utils.h"
 
 namespace barcola {
+
+double annualizeReturn(double totalReturn, size_t periods) {
+    if (totalReturn <= -1.0) {
+        return -1.0;
+    }
+    if (periods == 0) {
+        return 0.0;
+    }
+    const double years = static_cast<double>(periods) / TRADING_DAYS_PER_YEAR;
+    return std::pow(1.0 + totalReturn, 1.0 / years) - 1.0;
+}
 
 double calculateSharpeRatio(const std::vector<double>& equityCurve,
                             double riskFreeRate) {
@@ -128,15 +140,12 @@ double calculateCalmarRatio(const std::vector<double>& equityCurve) {
         return 0.0;
     }
 
-    const double totalReturn = equityCurve.back() / equityCurve.front() - 1.0;
-    const double years = static_cast<double>(equityCurve.size() - 1) /
-                         TRADING_DAYS_PER_YEAR;
-
-    if (years < 1e-12) {
+    if (equityCurve.front() <= 0.0) {
         return 0.0;
     }
 
-    const double annualizedReturn = std::pow(1.0 + totalReturn, 1.0 / years) - 1.0;
+    const double totalReturn = equityCurve.back() / equityCurve.front() - 1.0;
+    const double annualizedReturn = annualizeReturn(totalReturn, equityCurve.size() - 1);
     const double maxDD = calculateMaxDrawdown(equityCurve);
 
     if (maxDD < 1e-12) {
@@ -185,7 +194,11 @@ TradeStatistics analyzeTradeHistory(const std::vector<Trade>& trades) {
         stats.avgLoss = totalLoss / static_cast<double>(stats.losingTrades);
     }
 
-    stats.profitFactor = (totalLoss > 1e-12) ? (totalWin / totalLoss) : 0.0;
+    if (totalLoss > 0.0) {
+        stats.profitFactor = totalWin / totalLoss;
+    } else if (totalWin > 0.0) {
+        stats.profitFactor = std::numeric_limits<double>::infinity();
+    }
     stats.avgHoldDays = totalHoldDays / static_cast<double>(stats.totalTrades);
 
     return stats;
