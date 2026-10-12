@@ -3,33 +3,58 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
+#include <stdexcept>
 
 namespace barcola {
+
+namespace {
+
+std::vector<double> logReturns(const std::vector<double>& prices) {
+    std::vector<double> returns;
+    if (prices.size() < 2) {
+        return returns;
+    }
+    returns.reserve(prices.size() - 1);
+    for (size_t i = 1; i < prices.size(); ++i) {
+        returns.push_back(std::log(prices[i] / prices[i - 1]));
+    }
+    return returns;
+}
+
+}  // namespace
 
 CorrelationAnalysis::CorrelationAnalysis(const PriceHistory& historyA,
                                          const PriceHistory& historyB)
     : historyA_(historyA), historyB_(historyB) {}
 
 double CorrelationAnalysis::calculateCorrelation() const {
-    const size_t minDataPoints =
-        std::min(historyA_.dataPointsCount(), historyB_.dataPointsCount());
-
-    // FIX Bug 2: Guard against zero or one data point
-    if (minDataPoints < 2) {
-        return 0.0;
+    // FIX: rows used to be paired by position, so one missing day shifted every later pair.
+    // Join on date instead (both histories are sorted by date).
+    const auto& pointsA = historyA_.getDataPoints();
+    const auto& pointsB = historyB_.getDataPoints();
+    std::vector<double> closesA;
+    std::vector<double> closesB;
+    size_t i = 0;
+    size_t j = 0;
+    while (i < pointsA.size() && j < pointsB.size()) {
+        if (pointsA[i].getDate() < pointsB[j].getDate()) {
+            ++i;
+        } else if (pointsB[j].getDate() < pointsA[i].getDate()) {
+            ++j;
+        } else {
+            if (pointsA[i].getClosing() <= 0.0 || pointsB[j].getClosing() <= 0.0) {
+                throw std::invalid_argument("Correlation needs positive prices");
+            }
+            closesA.push_back(pointsA[i].getClosing());
+            closesB.push_back(pointsB[j].getClosing());
+            ++i;
+            ++j;
+        }
     }
 
-    std::vector<double> pricesA;
-    std::vector<double> pricesB;
-    pricesA.reserve(minDataPoints);
-    pricesB.reserve(minDataPoints);
-
-    for (size_t i = 0; i < minDataPoints; ++i) {
-        pricesA.push_back(historyA_.getDataPoint(i).getClosing());
-        pricesB.push_back(historyB_.getDataPoint(i).getClosing());
-    }
-
-    return barcola::calculateCorrelation(pricesA, pricesB);
+    // FIX: correlating price levels makes any two trending assets look related.
+    // Correlate daily returns instead.
+    return barcola::calculateCorrelation(logReturns(closesA), logReturns(closesB));
 }
 
 double calculateCorrelation(const std::vector<double>& a, const std::vector<double>& b) {

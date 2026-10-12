@@ -1,10 +1,17 @@
 #include "analysis/market_data_analysis.h"
 
 #include <cmath>
+#include <stdexcept>
 
 namespace barcola {
 
-MarketDataAnalysis::MarketDataAnalysis(PriceHistory& priceHistory)
+namespace {
+
+constexpr double TRADING_DAYS = 252.0;
+
+}  // namespace
+
+MarketDataAnalysis::MarketDataAnalysis(const PriceHistory& priceHistory)
     : priceHistory_(priceHistory) {}
 
 double MarketDataAnalysis::calculateAveragePrice() const {
@@ -20,21 +27,37 @@ double MarketDataAnalysis::calculateAveragePrice() const {
     return total / static_cast<double>(count);
 }
 
+// FIX: this used to be the standard deviation of price levels, which grows with the price
+// itself and with any trend. Volatility is measured on returns.
 double MarketDataAnalysis::calculateVolatility() const {
-    const size_t count = priceHistory_.dataPointsCount();
-    if (count < 2) {
+    const std::vector<double> closes = priceHistory_.getClosingPrices();
+    if (closes.size() < 3) {
         return 0.0;
     }
 
-    const double averagePrice = calculateAveragePrice();
-    double sumSquaredDifferences = 0.0;
-
-    for (size_t i = 0; i < count; ++i) {
-        const double price = priceHistory_.getDataPoint(i).getClosing();
-        sumSquaredDifferences += (price - averagePrice) * (price - averagePrice);
+    std::vector<double> returns;
+    returns.reserve(closes.size() - 1);
+    for (size_t i = 1; i < closes.size(); ++i) {
+        if (closes[i] <= 0.0 || closes[i - 1] <= 0.0) {
+            throw std::invalid_argument("Volatility needs positive prices");
+        }
+        returns.push_back(std::log(closes[i] / closes[i - 1]));
     }
 
-    return std::sqrt(sumSquaredDifferences / static_cast<double>(count - 1));
+    double mean = 0.0;
+    for (const double r : returns) {
+        mean += r;
+    }
+    mean /= static_cast<double>(returns.size());
+
+    double sumSquaredDifferences = 0.0;
+    for (const double r : returns) {
+        sumSquaredDifferences += (r - mean) * (r - mean);
+    }
+
+    const double dailyVolatility =
+        std::sqrt(sumSquaredDifferences / static_cast<double>(returns.size() - 1));
+    return dailyVolatility * std::sqrt(TRADING_DAYS);
 }
 
 std::vector<PricePoint> MarketDataAnalysis::getUpwardTrends() const {
