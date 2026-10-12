@@ -2,105 +2,96 @@
 
 #include <algorithm>
 #include <cmath>
-#include <random>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace barcola {
 
-SlippageModel::SlippageModel(const PriceHistory& priceHistory, double slippagePercentage)
-    : priceHistory_(priceHistory), slippagePercentage_(slippagePercentage) {}
+namespace {
 
-double SlippageModel::calculateSlippage(time_t entryDate, double entryPrice, time_t exitDate,
-                                        double exitPrice, double tradeVolume) const {
-    const auto entryDataPoint = priceHistory_.getDataPoint(entryDate);
-    const auto exitDataPoint = priceHistory_.getDataPoint(exitDate);
+constexpr double BPS_PER_UNIT = 10000.0;
 
-    const double entryActualPrice =
-        calculateActualPrice(entryDataPoint.getClosing(), entryPrice);
-    const double exitActualPrice =
-        calculateActualPrice(exitDataPoint.getClosing(), exitPrice);
+}  // namespace
 
-    const double slippage = entryActualPrice - exitActualPrice;
-    const double volumeFactor = calculateVolumeFactor(tradeVolume);
-
-    return slippage * volumeFactor;
-}
-
-double SlippageModel::calculateActualPrice(double referencePrice, double requestedPrice) const {
-    const double maxSlippage = referencePrice * slippagePercentage_;
-    double actualPrice = requestedPrice;
-
-    if (actualPrice > referencePrice) {
-        actualPrice = std::min(referencePrice + maxSlippage, actualPrice);
-    } else if (actualPrice < referencePrice) {
-        actualPrice = std::max(referencePrice - maxSlippage, actualPrice);
+// FIX: the previous model drew "market volatility" from std::random_device (a different
+// answer on every call), gave larger orders less slippage, and returned the trade's price
+// move rather than an execution cost.
+SlippageModel::SlippageModel(const PriceHistory& priceHistory, double baseBps,
+                             double volatilityMultiplier, size_t volatilityWindow)
+    : priceHistory_(priceHistory),
+      baseFraction_(baseBps / BPS_PER_UNIT),
+      volatilityMultiplier_(volatilityMultiplier),
+      volatilityWindow_(volatilityWindow) {
+    if (!(baseBps >= 0.0)) {
+        throw std::invalid_argument("baseBps must be zero or positive");
     }
-
-    return actualPrice;
+    if (!(volatilityMultiplier >= 0.0)) {
+        throw std::invalid_argument("volatilityMultiplier must be zero or positive");
+    }
+    if (volatilityWindow < 2) {
+        throw std::invalid_argument("volatilityWindow must be at least 2");
+    }
 }
 
-double SlippageModel::calculateVolumeFactor(double tradeVolume) const {
-    double volumeFactor = 1.0;
+double SlippageModel::slippageFraction(time_t date) const {
+    const auto& points = priceHistory_.getDataPoints();
+    const auto it = std::lower_bound(
+        points.begin(), points.end(), date,
+        [](const PricePoint& point, time_t value) { return point.getDate() < value; });
+    if (it == points.end() || it->getDate() != date) {
+        throw std::invalid_argument("No bar at epoch " + std::to_string(date));
+    }
+    const size_t index = static_cast<size_t>(it - points.begin());
+    return baseFraction_ + volatilityMultiplier_ * trailingVolatility(index);
+}
 
-    struct VolumeTier {
-        double threshold;
-        double factor;
-    };
-    constexpr VolumeTier kVolumeTiers[] = {
-        {1000.0, 1.0},
-        {10000.0, 0.95},
-        {50000.0, 0.9},
-        {100000.0, 0.85},
-    };
+double SlippageModel::fillPrice(time_t date, double referencePrice, OrderSide side) const {
+    const double fraction = slippageFraction(date);
+    return side == OrderSide::BUY ? referencePrice * (1.0 + fraction)
+                                  : referencePrice * (1.0 - fraction);
+}
 
-    for (const auto& tier : kVolumeTiers) {
-        if (tradeVolume >= tier.threshold) {
-            volumeFactor = tier.factor;
-        } else {
-            break;
+double SlippageModel::roundTripCost(time_t entryDate, double entryPrice, time_t exitDate,
+                                    double exitPrice, double shares) const {
+    const double paid = fillPrice(entryDate, entryPrice, OrderSide::BUY);
+    const double received = fillPrice(exitDate, exitPrice, OrderSide::SELL);
+    return std::abs(shares) * ((paid - entryPrice) + (exitPrice - received));
+}
+
+// Sample standard deviation of the log returns between bars [start, barIndex - 1], where
+// start keeps at most volatilityWindow_ returns. 0 if fewer than two returns are available.
+double SlippageModel::trailingVolatility(size_t barIndex) const {
+    if (barIndex < 3) {
+        return 0.0;  // bars 0..barIndex-1 hold fewer than two returns
+    }
+    const auto& points = priceHistory_.getDataPoints();
+    const size_t lastBar = barIndex - 1;
+    const size_t returnCount = std::min(volatilityWindow_, lastBar);
+    const size_t firstBar = lastBar - returnCount;
+
+    std::vector<double> returns;
+    returns.reserve(returnCount);
+    for (size_t i = firstBar + 1; i <= lastBar; ++i) {
+        const double previous = points[i - 1].getClosing();
+        const double current = points[i].getClosing();
+        if (previous <= 0.0 || current <= 0.0) {
+            throw std::invalid_argument("Slippage volatility needs positive prices");
         }
+        returns.push_back(std::log(current / previous));
     }
 
-    volumeFactor = std::max(volumeFactor, 0.5);
-
-    const double marketVolatility = calculateMarketVolatility();
-    volumeFactor *= calculateVolatilityAdjustment(marketVolatility);
-
-    return volumeFactor;
-}
-
-double SlippageModel::calculateMarketVolatility() const {
-    // Note: Uses random price changes for simulation. In production, this should use
-    // actual historical price changes. Preserved from original for backward compatibility.
-    constexpr size_t kNumDays = 30;
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::normal_distribution<double> distribution(0.0, 0.02);
-
-    std::vector<double> priceChanges;
-    priceChanges.reserve(kNumDays);
-    for (size_t i = 0; i < kNumDays; ++i) {
-        priceChanges.push_back(distribution(generator));
+    double mean = 0.0;
+    for (const double r : returns) {
+        mean += r;
     }
+    mean /= static_cast<double>(returns.size());
 
-    double sum = 0.0;
-    for (const double val : priceChanges) {
-        sum += val;
+    double sumSq = 0.0;
+    for (const double r : returns) {
+        sumSq += (r - mean) * (r - mean);
     }
-    const double mean = sum / static_cast<double>(kNumDays);
-
-    double squaredDiffSum = 0.0;
-    for (const double val : priceChanges) {
-        const double diff = val - mean;
-        squaredDiffSum += diff * diff;
-    }
-
-    return std::sqrt(squaredDiffSum / static_cast<double>(kNumDays));
-}
-
-double SlippageModel::calculateVolatilityAdjustment(double marketVolatility) const {
-    const double volatilityFactor = 1.0 - 0.5 * std::tanh(marketVolatility);
-    return std::max(volatilityFactor, 0.5);
+    return std::sqrt(sumSq / static_cast<double>(returns.size() - 1));
 }
 
 }  // namespace barcola
