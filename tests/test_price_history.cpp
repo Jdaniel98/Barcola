@@ -32,13 +32,13 @@ TEST(PriceHistoryTest, GetDataPointByDate) {
 TEST(PriceHistoryTest, GetDataPoint_OutOfRange_Throws) {
     PriceHistory history("AAPL");
     history.loadFromCsv(dataDir() + "/AAPL_2023_sample.csv");
-    EXPECT_THROW(history.getDataPoint(static_cast<size_t>(999)), std::invalid_argument);
+    EXPECT_THROW((void)history.getDataPoint(static_cast<size_t>(999)), std::invalid_argument);
 }
 
 TEST(PriceHistoryTest, GetDataPoint_InvalidDate_Throws) {
     PriceHistory history("AAPL");
     history.loadFromCsv(dataDir() + "/AAPL_2023_sample.csv");
-    EXPECT_THROW(history.getDataPoint(std::string("2099-01-01")), std::invalid_argument);
+    EXPECT_THROW((void)history.getDataPoint(std::string("2099-01-01")), std::invalid_argument);
 }
 
 TEST(PriceHistoryTest, ClearDataPoints) {
@@ -72,4 +72,28 @@ TEST(PriceHistoryTest, GetDataPoints_ReturnsConstRef) {
     history.loadFromCsv(dataDir() + "/AAPL_2023_sample.csv");
     const auto& points = history.getDataPoints();
     EXPECT_EQ(points.size(), 30u);
+}
+
+TEST(PriceHistoryTest, GetClosingPrices) {
+    PriceHistory history("UP");
+    history.loadFromCsv(dataDir() + "/monotonic_up.csv");
+    const auto closes = history.getClosingPrices();
+    ASSERT_EQ(closes.size(), 16u);
+    EXPECT_DOUBLE_EQ(closes.front(), 10.0);
+    EXPECT_DOUBLE_EQ(closes.back(), 25.0);
+}
+
+TEST(PriceHistoryTest, AddDataPoint_AppendsInDateOrder) {
+    PriceHistory history("TEST");
+    history.addDataPoint(PricePoint("2023-01-03", 10.0));
+    history.addDataPoint(PricePoint("2023-01-04", 11.0));
+    EXPECT_EQ(history.dataPointsCount(), 2u);
+    EXPECT_DOUBLE_EQ(history.getDataPoint(std::string("2023-01-04")).getClosing(), 11.0);
+}
+
+TEST(PriceHistoryTest, AddDataPoint_OutOfOrderOrDuplicate_Throws) {
+    PriceHistory history("TEST");
+    history.addDataPoint(PricePoint("2023-01-04", 10.0));
+    EXPECT_THROW(history.addDataPoint(PricePoint("2023-01-03", 9.0)), std::invalid_argument);
+    EXPECT_THROW(history.addDataPoint(PricePoint("2023-01-04", 9.0)), std::invalid_argument);
 }
