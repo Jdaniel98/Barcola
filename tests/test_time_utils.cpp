@@ -35,11 +35,29 @@ TEST(TimeUtilsTest, IsDateEarlierOrEqual_Later) {
 }
 
 TEST(TimeUtilsTest, InvalidDateFormat_Throws) {
-    EXPECT_THROW(convertDateToEpoch("not-a-date"), std::invalid_argument);
-    EXPECT_THROW(convertDateToEpoch("2023/01/15"), std::invalid_argument);
-    EXPECT_THROW(convertDateToEpoch(""), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch("not-a-date"), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch("2023/01/15"), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch(""), std::invalid_argument);
 }
 
 TEST(TimeUtilsTest, GetCurrentEpoch_ReturnsPositive) {
     EXPECT_GT(getCurrentEpoch(), 0);
+}
+
+TEST(TimeUtilsTest, DayPastEndOfMonth_Throws) {
+    // Regression: 2023-02-31 used to roll over silently to 2023-03-03
+    EXPECT_THROW((void)convertDateToEpoch("2023-02-31"), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch("2023-04-31"), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch("2023-02-29"), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch("1900-02-29"), std::invalid_argument);
+}
+
+TEST(TimeUtilsTest, LeapDay_Valid) {
+    EXPECT_EQ(convertEpochToDate(convertDateToEpoch("2024-02-29")), "2024-02-29");
+    EXPECT_EQ(convertEpochToDate(convertDateToEpoch("2000-02-29")), "2000-02-29");
+}
+
+TEST(TimeUtilsTest, NonDigitCharacters_Throw) {
+    EXPECT_THROW((void)convertDateToEpoch("2023-0a-15"), std::invalid_argument);
+    EXPECT_THROW((void)convertDateToEpoch(" 023-01-15"), std::invalid_argument);
 }

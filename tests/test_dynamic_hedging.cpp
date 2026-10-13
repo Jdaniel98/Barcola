@@ -50,3 +50,27 @@ TEST(DynamicHedgingTest, ShortAndLongMA_DifferentSizes) {
     // shortMA should be longer than longMA (more valid windows)
     EXPECT_GT(result.shortMA.size(), result.longMA.size());
 }
+
+TEST(DynamicHedgingTest, ShortNotLessThanLong_Throws) {
+    // Regression: short >= long wrapped an unsigned offset and read outside the array
+    PriceHistory history("AAPL");
+    history.loadFromCsv(std::string(BARCOLA_TEST_DATA_DIR) + "/AAPL_2023_sample.csv");
+
+    DynamicHedging hedging(history);
+    EXPECT_THROW((void)hedging.computeMovingAverages(10, 5), std::invalid_argument);
+    EXPECT_THROW((void)hedging.computeMovingAverages(5, 5), std::invalid_argument);
+    EXPECT_THROW((void)hedging.computeMovingAverages(0, 5), std::invalid_argument);
+    EXPECT_THROW(hedging.performDynamicHedging(20, 10), std::invalid_argument);
+}
+
+TEST(DynamicHedgingTest, AlignedAverages_EndOnSameBar) {
+    // longMA[0] ends at bar 4; the shortMA ending there is shortMA[5 - 3] = mean(12, 13, 14)
+    PriceHistory history("UP");
+    history.loadFromCsv(std::string(BARCOLA_TEST_DATA_DIR) + "/monotonic_up.csv");
+
+    DynamicHedging hedging(history);
+    auto result = hedging.computeMovingAverages(3, 5);
+    ASSERT_EQ(result.shortMA.size(), 14u);
+    ASSERT_EQ(result.longMA.size(), 12u);
+    EXPECT_NEAR(result.shortMA[2], 13.0, 1e-10);
+}

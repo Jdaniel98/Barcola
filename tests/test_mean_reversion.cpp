@@ -53,5 +53,13 @@ TEST(MeanReversionTest, GetValueOutOfRange_Throws) {
 
     MeanReversion mr(history, 3);
     mr.calculateMeanReversion();
-    EXPECT_THROW(mr.getMeanReversionValue(999), std::out_of_range);
+    EXPECT_THROW((void)mr.getMeanReversionValue(999), std::out_of_range);
+}
+
+TEST(MeanReversionTest, NonPositiveWindow_Throws) {
+    PriceHistory history("CONST");
+    history.loadFromCsv(std::string(BARCOLA_TEST_DATA_DIR) + "/constant_price.csv");
+
+    EXPECT_THROW(MeanReversion(history, 0), std::invalid_argument);
+    EXPECT_THROW(MeanReversion(history, -3), std::invalid_argument);
 }

@@ -41,8 +41,50 @@ TEST(CorrelationTest, CorrelationAnalysisClass) {
     histB.loadFromCsv(std::string(BARCOLA_TEST_DATA_DIR) + "/MSFT_2023_sample.csv");
 
     CorrelationAnalysis analysis(histA, histB);
-    double corr = analysis.calculateCorrelation();
-    // AAPL and MSFT should be positively correlated
-    EXPECT_GT(corr, 0.0);
-    EXPECT_LE(corr, 1.0);
+    // Correlation of daily log returns, computed independently. (The price levels correlate
+    // at 0.997 because both stocks rose over the sample.)
+    EXPECT_NEAR(analysis.calculateCorrelation(), 0.4715678594, 1e-9);
+}
+
+// History with one bar per listed date
+static PriceHistory makeHistory(const std::vector<std::string>& dates,
+                                const std::vector<double>& closes) {
+    PriceHistory history("TEST");
+    for (size_t i = 0; i < dates.size(); ++i) {
+        history.addDataPoint(PricePoint(dates[i], closes[i]));
+    }
+    return history;
+}
+
+TEST(CorrelationTest, TrendingAssets_CorrelateOnReturnsNotLevels) {
+    // Regression: both series trend up, so their price levels correlate strongly, but their
+    // daily moves are opposite (A: +3, -1, ... and B: -1, +3, ...).
+    // Levels correlate at about 0.61, returns at about -1.
+    const std::vector<std::string> dates = {"2023-01-02", "2023-01-03", "2023-01-04",
+                                            "2023-01-05", "2023-01-06", "2023-01-09",
+                                            "2023-01-10"};
+    const PriceHistory a = makeHistory(dates, {100, 103, 102, 105, 104, 107, 106});
+    const PriceHistory b = makeHistory(dates, {100, 99, 102, 101, 104, 103, 106});
+
+    EXPECT_GT(calculateCorrelation(a.getClosingPrices(), b.getClosingPrices()), 0.5);
+    EXPECT_LT(CorrelationAnalysis(a, b).calculateCorrelation(), -0.9);
+}
+
+TEST(CorrelationTest, MissingDay_AlignedByDate) {
+    // Regression: rows were paired by position, so one missing day shifted every later pair.
+    // B is A without 2023-01-04, so on their common dates the two are identical.
+    const PriceHistory a = makeHistory(
+        {"2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05", "2023-01-06", "2023-01-09"},
+        {100, 103, 99, 104, 101, 106});
+    const PriceHistory b = makeHistory(
+        {"2023-01-02", "2023-01-03", "2023-01-05", "2023-01-06", "2023-01-09"},
+        {100, 103, 104, 101, 106});
+
+    EXPECT_NEAR(CorrelationAnalysis(a, b).calculateCorrelation(), 1.0, 1e-12);
+}
+
+TEST(CorrelationTest, NoCommonDates_ReturnsZero) {
+    const PriceHistory a = makeHistory({"2023-01-02", "2023-01-03", "2023-01-04"}, {1, 2, 3});
+    const PriceHistory b = makeHistory({"2023-02-02", "2023-02-03", "2023-02-06"}, {1, 2, 3});
+    EXPECT_DOUBLE_EQ(CorrelationAnalysis(a, b).calculateCorrelation(), 0.0);
 }

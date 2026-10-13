@@ -1,11 +1,16 @@
 #include "indicators/bollinger_bands.h"
 
 #include <cmath>
+#include <stdexcept>
 
 namespace barcola {
 
 std::pair<std::vector<double>, std::vector<double>> calculateBollingerBands(
     const std::vector<double>& prices, size_t period, double stdDevFactor) {
+    if (period == 0) {
+        throw std::invalid_argument("Bollinger Bands period must be at least 1");
+    }
+
     std::vector<double> upper;
     std::vector<double> lower;
 

@@ -16,9 +16,14 @@ struct TradeStatistics {
     double winRate = 0.0;
     double avgWin = 0.0;
     double avgLoss = 0.0;
+    // Gross wins / gross losses. 0 with no trades; +infinity with wins and no losses.
     double profitFactor = 0.0;
-    double avgHoldDays = 0.0;
+    double avgHoldDays = 0.0;  // calendar days
 };
+
+// Compound annual growth rate for `totalReturn` earned over `periods` daily returns
+// (one fewer than the number of bars). Returns 0 for zero periods and -1 for a total loss.
+[[nodiscard]] double annualizeReturn(double totalReturn, size_t periods);
 
 [[nodiscard]] double calculateSharpeRatio(
     const std::vector<double>& equityCurve,

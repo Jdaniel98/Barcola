@@ -4,43 +4,31 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "indicators/moving_average.h"
+
 namespace barcola {
 
 MeanReversion::MeanReversion(const PriceHistory& history, int windowSize)
-    : priceHistory_(history), movingWindowSize_(windowSize) {}
-
-double MeanReversion::calculateMovingAverage(size_t startIndex) const {
-    const auto& dataPoints = priceHistory_.getDataPoints();
-    const size_t endIndex = startIndex + static_cast<size_t>(movingWindowSize_);
-
-    if (endIndex > dataPoints.size()) {
-        throw std::out_of_range("Window extends beyond data range");
+    : priceHistory_(history), movingWindowSize_(windowSize) {
+    if (windowSize < 1) {
+        throw std::invalid_argument("Mean reversion window must be at least 1");
     }
-
-    double sum = 0.0;
-    for (size_t i = startIndex; i < endIndex; ++i) {
-        sum += dataPoints[i].getClosing();
-    }
-    return sum / static_cast<double>(movingWindowSize_);
 }
 
 void MeanReversion::calculateMeanReversion() {
-    const auto& dataPoints = priceHistory_.getDataPoints();
-    const size_t dataSize = dataPoints.size();
+    const std::vector<double> closes = priceHistory_.getClosingPrices();
     const size_t windowSize = static_cast<size_t>(movingWindowSize_);
 
     meanReversionValues_.clear();
 
-    if (dataSize < windowSize) {
+    if (closes.size() < windowSize) {
         return;
     }
 
     // For each point starting at windowSize-1, compute deviation from its local moving average
-    for (size_t i = windowSize - 1; i < dataSize; ++i) {
-        const size_t startIdx = i - windowSize + 1;
-        const double movingAvg = calculateMovingAverage(startIdx);
-        const double deviation = dataPoints[i].getClosing() - movingAvg;
-        meanReversionValues_.push_back(deviation);
+    const std::vector<double> sma = calculateSMA(closes, windowSize);
+    for (size_t i = windowSize - 1; i < closes.size(); ++i) {
+        meanReversionValues_.push_back(closes[i] - sma[i]);
     }
 }
 
