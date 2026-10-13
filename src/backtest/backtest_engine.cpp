@@ -2,111 +2,138 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace barcola {
 
-BacktestEngine::BacktestEngine(BacktestConfig config)
-    : config_(std::move(config)) {}
+namespace {
 
-BacktestResult BacktestEngine::run(Strategy& strategy,
-                                   const PriceHistory& data) const {
+constexpr double BPS_PER_UNIT = 10000.0;
+
+// An open long position. shares == 0 means flat.
+struct Holding {
+    double shares = 0.0;
+    double entryPrice = 0.0;
+    double entryCommission = 0.0;
+    std::string entryDate;
+
+    [[nodiscard]] bool isLong() const { return shares > 0.0; }
+};
+
+}  // namespace
+
+BacktestEngine::BacktestEngine(BacktestConfig config) : config_(std::move(config)) {
+    if (!(config_.initialCapital > 0.0)) {
+        throw std::invalid_argument("initialCapital must be positive");
+    }
+    if (!(config_.commissionRate >= 0.0)) {
+        throw std::invalid_argument("commissionRate must be zero or positive");
+    }
+    if (!(config_.slippageBps >= 0.0)) {
+        throw std::invalid_argument("slippageBps must be zero or positive");
+    }
+    if (!(config_.positionFraction > 0.0 && config_.positionFraction <= 1.0)) {
+        throw std::invalid_argument("positionFraction must be in (0, 1]");
+    }
+    if (!(config_.riskFreeRate > -1.0) || !std::isfinite(config_.riskFreeRate)) {
+        throw std::invalid_argument("riskFreeRate must be a finite rate above -100%");
+    }
+}
+
+BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data) const {
     const auto& points = data.getDataPoints();
     if (points.empty()) {
         throw std::invalid_argument("Cannot backtest on empty price data");
     }
 
-    BacktestResult result;
-    double cash = config_.initialCapital;
-    double shares = 0.0;
-    double entryPrice = 0.0;
-    std::string entryDate;
-    bool inPosition = false;
+    strategy.reset();
 
+    BacktestResult result;
     result.equityCurve.reserve(points.size());
 
-    for (size_t i = 0; i < points.size(); ++i) {
-        const double price = points[i].getClosing();
-        const Signal signal = strategy.evaluate(points, i);
+    const double dailyCashRate = config_.riskFreeRate / TRADING_DAYS_PER_YEAR;
+    double cash = config_.initialCapital;
+    Holding holding;
+    Signal pending = Signal::HOLD;
 
-        if (signal == Signal::BUY && !inPosition) {
-            // Enter long position
-            const double execPrice = applySlippage(price, true);
-            shares = calculateShares(cash, execPrice);
-            if (shares > 0.0) {
-                const double cost = shares * execPrice;
-                const double commission = applyCommission(cost);
-                cash -= (cost + commission);
-                entryPrice = execPrice;
-                entryDate = points[i].getDateString();
-                inPosition = true;
-            }
-        } else if (signal == Signal::SELL && inPosition) {
-            // Exit long position
-            const double execPrice = applySlippage(price, false);
-            const double proceeds = shares * execPrice;
-            const double commission = applyCommission(proceeds);
-            cash += (proceeds - commission);
-
-            Trade trade;
-            trade.symbol = data.getAssetSymbol();
-            trade.entryPrice = entryPrice;
-            trade.exitPrice = execPrice;
-            trade.entryDate = entryDate;
-            trade.exitDate = points[i].getDateString();
-            trade.shares = shares;
-            trade.pnl = (execPrice - entryPrice) * shares -
-                         applyCommission(shares * entryPrice) -
-                         applyCommission(proceeds);
-            trade.returnPct = (execPrice - entryPrice) / entryPrice;
-            result.trades.push_back(trade);
-
-            shares = 0.0;
-            inPosition = false;
+    const auto openLong = [&](const PricePoint& bar, double referencePrice) {
+        const double execPrice = applySlippage(referencePrice, true);
+        const double shares = calculateShares(cash, execPrice);
+        if (shares <= 0.0) {
+            return;  // Can't afford a single share; stay flat.
         }
+        const double cost = shares * execPrice;
+        const double commission = applyCommission(cost);
+        cash -= cost + commission;
+        holding = {shares, execPrice, commission, bar.getDateString()};
+    };
 
-        // Record equity: cash + mark-to-market position value
-        const double portfolioValue = cash + shares * price;
-        result.equityCurve.push_back(portfolioValue);
-    }
-
-    // Close any open position at the last price
-    if (inPosition && !points.empty()) {
-        const double lastPrice = points.back().getClosing();
-        const double execPrice = applySlippage(lastPrice, false);
-        const double proceeds = shares * execPrice;
+    const auto closeLong = [&](const PricePoint& bar, double referencePrice) {
+        const double execPrice = applySlippage(referencePrice, false);
+        const double proceeds = holding.shares * execPrice;
         const double commission = applyCommission(proceeds);
-        cash += (proceeds - commission);
+        cash += proceeds - commission;
 
         Trade trade;
         trade.symbol = data.getAssetSymbol();
-        trade.entryPrice = entryPrice;
+        trade.entryPrice = holding.entryPrice;
         trade.exitPrice = execPrice;
-        trade.entryDate = entryDate;
-        trade.exitDate = points.back().getDateString();
-        trade.shares = shares;
-        trade.pnl = (execPrice - entryPrice) * shares -
-                     applyCommission(shares * entryPrice) -
-                     applyCommission(proceeds);
-        trade.returnPct = (execPrice - entryPrice) / entryPrice;
+        trade.entryDate = holding.entryDate;
+        trade.exitDate = bar.getDateString();
+        trade.shares = holding.shares;
+        trade.pnl = (execPrice - holding.entryPrice) * holding.shares - holding.entryCommission -
+                    commission;
+        trade.returnPct = (execPrice - holding.entryPrice) / holding.entryPrice;
         result.trades.push_back(trade);
 
-        shares = 0.0;
+        holding = {};
+    };
+
+    const auto execute = [&](Signal signal, const PricePoint& bar, double referencePrice) {
+        if (signal == Signal::BUY && !holding.isLong()) {
+            openLong(bar, referencePrice);
+        } else if (signal == Signal::SELL && holding.isLong()) {
+            closeLong(bar, referencePrice);
+        }
+    };
+
+    for (size_t i = 0; i < points.size(); ++i) {
+        const PricePoint& bar = points[i];
+
+        if (i > 0) {
+            cash *= 1.0 + dailyCashRate;
+        }
+
+        if (config_.fillTiming == FillTiming::NEXT_OPEN) {
+            execute(pending, bar, bar.getOpening());
+            pending = Signal::HOLD;
+        }
+
+        const Position position = holding.isLong() ? Position::LONG : Position::FLAT;
+        const Signal signal = strategy.evaluate(BarView(points, i + 1), position);
+
+        if (config_.fillTiming == FillTiming::SAME_CLOSE) {
+            execute(signal, bar, bar.getClosing());
+        } else {
+            pending = signal;
+        }
+
+        result.equityCurve.push_back(cash + holding.shares * bar.getClosing());
+    }
+
+    // Close any open position at the last close. An order still pending from the last bar has
+    // no next open to fill at, so it is dropped.
+    if (holding.isLong()) {
+        closeLong(points.back(), points.back().getClosing());
         result.equityCurve.back() = cash;
     }
 
-    // Compute summary metrics
-    const double finalEquity = result.equityCurve.back();
-    result.totalReturn = (finalEquity / config_.initialCapital) - 1.0;
-
-    const double years = static_cast<double>(points.size()) /
-                         TRADING_DAYS_PER_YEAR;
-    if (years > 1e-12) {
-        result.annualizedReturn =
-            std::pow(1.0 + result.totalReturn, 1.0 / years) - 1.0;
-    }
-
-    result.sharpeRatio = calculateSharpeRatio(result.equityCurve);
-    result.sortinoRatio = calculateSortinoRatio(result.equityCurve);
+    const size_t periods = points.size() - 1;
+    result.totalReturn = result.equityCurve.back() / config_.initialCapital - 1.0;
+    result.annualizedReturn = annualizeReturn(result.totalReturn, periods);
+    result.sharpeRatio = calculateSharpeRatio(result.equityCurve, config_.riskFreeRate);
+    result.sortinoRatio = calculateSortinoRatio(result.equityCurve, config_.riskFreeRate);
     result.maxDrawdown = calculateMaxDrawdown(result.equityCurve);
     result.calmarRatio = calculateCalmarRatio(result.equityCurve);
 
@@ -120,21 +147,21 @@ BacktestResult BacktestEngine::run(Strategy& strategy,
 }
 
 double BacktestEngine::applySlippage(double price, bool isBuy) const {
-    const double slippageFraction = config_.slippageBps / 10000.0;
-    return isBuy ? price * (1.0 + slippageFraction)
-                 : price * (1.0 - slippageFraction);
+    const double slippageFraction = config_.slippageBps / BPS_PER_UNIT;
+    return isBuy ? price * (1.0 + slippageFraction) : price * (1.0 - slippageFraction);
 }
 
 double BacktestEngine::applyCommission(double tradeValue) const {
     return tradeValue * config_.commissionRate;
 }
 
-double BacktestEngine::calculateShares(double capital, double price) const {
-    if (price <= 0.0) {
+// Whole shares only. The entry commission is included so a full-cash entry never overdraws.
+double BacktestEngine::calculateShares(double cash, double price) const {
+    if (price <= 0.0 || cash <= 0.0) {
         return 0.0;
     }
-    const double riskCapital = capital * config_.riskPerTrade;
-    return std::floor(riskCapital / price);
+    const double budget = cash * config_.positionFraction;
+    return std::floor(budget / (price * (1.0 + config_.commissionRate)));
 }
 
 }  // namespace barcola
