@@ -30,6 +30,7 @@ barcola_add_test(test_dynamic_hedging)
 barcola_add_test(test_monte_carlo)
 barcola_add_test(test_csv_io)
 barcola_add_test(test_svg_chart)
+barcola_add_test(test_bootstrap)
 
 # Phase 2: backtest tests need strategies library too
 function(barcola_add_backtest_test name)

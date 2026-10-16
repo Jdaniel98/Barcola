@@ -164,3 +164,20 @@ TEST(SvgChartTest, PanelChart_MismatchedSeries_Throws) {
     chart.series = {{"A", SeriesColor::First, {0.0, -0.1, -0.2}}};
     EXPECT_THROW((void)renderPanelChart(chart), std::invalid_argument);
 }
+
+TEST(SvgChartTest, LineChart_ShortSeriesGetADotPerPoint) {
+    LineChart chart;
+    chart.dates = {"2016-07-01", "2017-07-01", "2018-07-01"};
+    chart.series = {{"A", SeriesColor::First, {0.5, 1.0, 0.2}}};
+    // Three dots per series: two on the line plus the end dot
+    EXPECT_EQ(countOf(renderLineChart(chart), "class=\"ring d1\""), 3u);
+}
+
+TEST(SvgChartTest, LineChart_LongSeriesOnlyEndDot) {
+    LineChart chart;
+    for (int i = 0; i < 100; ++i) {
+        chart.dates.push_back("2020-01-01");
+    }
+    chart.series = {{"A", SeriesColor::First, std::vector<double>(100, 1.0)}};
+    EXPECT_EQ(countOf(renderLineChart(chart), "class=\"ring d1\""), 1u);
+}

@@ -1,0 +1,39 @@
+# Dow Jones Industrial Average constituents on 2014-01-01 (after the September 2013
+# changes that added GS, NKE and V). Fixed before any Phase 6 results were seen.
+# UTX merged into Raytheon in 2020; Tiingo continues its history as RTX, with the Carrier
+# and Otis spin-offs adjusted for, so it stays in.
+#
+# DD is excluded, a data-quality decision made before running any strategy on this universe:
+# Tiingo's adjusted history shows fake one-day drops of -20.0% on 2017-09-01 (DowDuPont
+# merger) and -16.9% on 2019-06-03 (Corteva spin-off and reverse split), which a dip-buying
+# strategy would trade on. The 29 symbols below are the study universe.
+MMM
+AXP
+T
+BA
+CAT
+CVX
+CSCO
+KO
+# DD (excluded, see above)
+XOM
+GE
+GS
+HD
+INTC
+IBM
+JNJ
+JPM
+MCD
+MRK
+MSFT
+NKE
+PFE
+PG
+TRV
+UNH
+UTX
+VZ
+V
+WMT
+DIS
