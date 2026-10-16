@@ -8,6 +8,7 @@ add_library(barcola STATIC
     analysis/market_data_analysis.cpp
     analysis/correlation.cpp
     analysis/mean_reversion.cpp
+    analysis/bootstrap.cpp
     risk/position_sizing.cpp
     risk/slippage_model.cpp
     risk/dynamic_hedging.cpp

@@ -29,6 +29,12 @@ struct TradeStatistics {
     const std::vector<double>& equityCurve,
     double riskFreeRate = DEFAULT_RISK_FREE_RATE);
 
+// Annualized Sharpe ratio of daily returns: mean excess return over the population standard
+// deviation, times sqrt(252). Returns 0 for no returns or zero volatility.
+[[nodiscard]] double calculateSharpeRatioFromReturns(
+    const std::vector<double>& dailyReturns,
+    double riskFreeRate = DEFAULT_RISK_FREE_RATE);
+
 [[nodiscard]] double calculateMaxDrawdown(
     const std::vector<double>& equityCurve);
 
