@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "core/price_history.h"
+#include "core/time_utils.h"
 
 using namespace barcola;
 
@@ -96,4 +97,30 @@ TEST(PriceHistoryTest, AddDataPoint_OutOfOrderOrDuplicate_Throws) {
     history.addDataPoint(PricePoint("2023-01-04", 10.0));
     EXPECT_THROW(history.addDataPoint(PricePoint("2023-01-03", 9.0)), std::invalid_argument);
     EXPECT_THROW(history.addDataPoint(PricePoint("2023-01-04", 9.0)), std::invalid_argument);
+}
+
+TEST(PriceHistoryTest, Between_InclusiveDateRange) {
+    PriceHistory history("UP");
+    history.loadFromCsv(dataDir() + "/monotonic_up.csv");
+
+    const PriceHistory slice =
+        history.between(convertDateToEpoch("2023-01-05"), convertDateToEpoch("2023-01-10"));
+    ASSERT_EQ(slice.dataPointsCount(), 4u);  // 01-05, 01-06, 01-09, 01-10
+    EXPECT_EQ(slice.getAssetSymbol(), "UP");
+    EXPECT_EQ(slice.getDataPoint(static_cast<size_t>(0)).getDateString(), "2023-01-05");
+    EXPECT_EQ(slice.getDataPoint(static_cast<size_t>(3)).getDateString(), "2023-01-10");
+}
+
+TEST(PriceHistoryTest, Between_DatesBetweenBars) {
+    // 2023-01-07 is a Saturday; the range snaps to the trading days inside it
+    PriceHistory history("UP");
+    history.loadFromCsv(dataDir() + "/monotonic_up.csv");
+
+    const PriceHistory slice =
+        history.between(convertDateToEpoch("2023-01-07"), convertDateToEpoch("2023-01-08"));
+    EXPECT_EQ(slice.dataPointsCount(), 0u);
+
+    const PriceHistory tail =
+        history.between(convertDateToEpoch("2023-01-21"), convertDateToEpoch("2030-01-01"));
+    EXPECT_EQ(tail.dataPointsCount(), 3u);  // 01-23, 01-24, 01-25
 }
