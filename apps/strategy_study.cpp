@@ -6,11 +6,18 @@
 // out-of-sample window (2020-2024). Each family's full parameter grid is also run
 // out-of-sample, so the write-up can show how much the choice matters.
 //
-// Usage: strategy_study [data_dir] [results_dir]
-//   data_dir     folder of <SYMBOL>.csv files (default: data/market)
-//   results_dir  folder for the outputs (default: results)
+// Robustness checks follow: block-bootstrap intervals for the Sharpe gaps between
+// strategies, a walk-forward test that re-chooses parameters every year on the three years
+// before it (test years 2016-2024), and the out-of-sample results at 0-3x the trading costs.
+//
+// Usage: strategy_study [data_dir] [results_dir] [universe_label]
+//   data_dir        folder of <SYMBOL>.csv files (default: data/market)
+//   results_dir     folder for the outputs (default: results)
+//   universe_label  how charts describe the symbols when there are too many to list,
+//                   e.g. "Dow 30 as of 2014" (default: none)
 
 #include <algorithm>
+#include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -18,11 +25,13 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "analysis/bootstrap.h"
 #include "analysis/correlation.h"
 #include "backtest/backtest_engine.h"
 #include "buy_and_hold_strategy.h"
@@ -50,6 +59,21 @@ const Window OUT_OF_SAMPLE{"out_of_sample", "Out-of-sample", "2020-01-01", "2024
 // One year of history before each window. Every run gets the same history, so all
 // parameter sets trade over identical days; the longest lookback (200 days) fits inside it.
 constexpr size_t WARMUP_BARS = 252;
+// The least history a run can start with: the longest lookback (200 days) plus one bar.
+constexpr size_t MIN_WARMUP_BARS = 201;
+
+// Walk-forward: each test year's parameters are chosen on the TRAIN_YEARS before it.
+constexpr int FIRST_TEST_YEAR = 2016;
+constexpr int LAST_TEST_YEAR = 2024;
+constexpr int TRAIN_YEARS = 3;
+
+// Moving-block bootstrap of daily returns, about one month per block
+constexpr size_t BOOTSTRAP_BLOCK_DAYS = 21;
+constexpr size_t BOOTSTRAP_RESAMPLES = 1000;
+constexpr std::uint32_t BOOTSTRAP_SEED = 7;
+
+// Charts list the symbols by name up to this many; beyond it they use the universe label.
+constexpr size_t MAX_LISTED_SYMBOLS = 8;
 
 constexpr double INITIAL_CAPITAL = 100000.0;
 constexpr double COMMISSION_RATE = 0.001;  // 0.1% per side
@@ -129,18 +153,20 @@ WindowData sliceWindow(const PriceHistory& history, const Window& window) {
         throw std::runtime_error(history.getAssetSymbol() + " has no data in " + window.name);
     }
     const size_t warmup = std::min(windowIndex, WARMUP_BARS);
-    if (warmup < WARMUP_BARS) {
+    if (warmup < MIN_WARMUP_BARS) {
         std::cerr << "warning: " << history.getAssetSymbol() << " has only " << warmup
                   << " warm-up bars before " << window.start << "\n";
     }
     return {history.between(points[windowIndex - warmup].getDate(), end), warmup};
 }
 
-BacktestResult runStrategy(Strategy& strategy, const WindowData& data) {
+// costMultiplier scales both commission and slippage, for the cost-sensitivity check.
+BacktestResult runStrategy(Strategy& strategy, const WindowData& data,
+                           double costMultiplier = 1.0) {
     BacktestConfig config;
     config.initialCapital = INITIAL_CAPITAL;
-    config.commissionRate = COMMISSION_RATE;
-    config.slippageBps = SLIPPAGE_BPS;
+    config.commissionRate = COMMISSION_RATE * costMultiplier;
+    config.slippageBps = SLIPPAGE_BPS * costMultiplier;
     config.positionFraction = 1.0;
     config.riskFreeRate = RISK_FREE_RATE;
     config.fillTiming = FillTiming::NEXT_OPEN;
@@ -536,7 +562,7 @@ void writeFile(const fs::path& path, const std::string& contents) {
 }
 
 void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& universe,
-                 const std::vector<WindowData>& outOfSample,
+                 const std::string& universeLabel, const std::vector<WindowData>& outOfSample,
                  const std::vector<FamilyResults>& families, const std::vector<Row>& buyAndHoldIn,
                  const std::vector<Row>& buyAndHoldOut) {
     fs::create_directories(chartsDir);
@@ -563,8 +589,13 @@ void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& uni
     for (size_t s = 0; s < universe.size(); ++s) {
         symbolList += (s == 0 ? "" : ", ") + universe[s].getAssetSymbol();
     }
+    if (universe.size() > MAX_LISTED_SYMBOLS) {
+        symbolList = universeLabel.empty() ? "" : universeLabel;
+    }
     const std::string accounts = "Average of " + std::to_string(universe.size()) +
-                                 " $100,000 accounts (" + symbolList + "), after costs";
+                                 " $100,000 accounts" +
+                                 (symbolList.empty() ? "" : " (" + symbolList + ")") +
+                                 ", after costs";
     const std::string outPeriod = OUT_OF_SAMPLE.start.substr(0, 4) + "\xE2\x80\x93" +
                                   OUT_OF_SAMPLE.end.substr(0, 4);
     const std::string inPeriod =
@@ -624,15 +655,346 @@ void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& uni
     writeFile(chartsDir / "parameter_sensitivity.svg", renderStripChart(sensitivity));
 }
 
+// --- Robustness ---
+
+// Daily returns of one strategy, one series per symbol. All series must cover the same days.
+struct ReturnSet {
+    std::string name;
+    std::vector<std::vector<double>> bySymbol;
+};
+
+double meanSharpeOfReturns(const std::vector<std::vector<double>>& bySymbol,
+                           const std::vector<size_t>* indices) {
+    double sum = 0.0;
+    for (const auto& returns : bySymbol) {
+        if (indices == nullptr) {
+            sum += calculateSharpeRatioFromReturns(returns, RISK_FREE_RATE);
+            continue;
+        }
+        std::vector<double> resampled;
+        resampled.reserve(indices->size());
+        for (size_t i : *indices) {
+            resampled.push_back(returns[i]);
+        }
+        sum += calculateSharpeRatioFromReturns(resampled, RISK_FREE_RATE);
+    }
+    return sum / static_cast<double>(bySymbol.size());
+}
+
+// How much of each Sharpe gap could be luck: resample the days in month-long blocks (the
+// same days for every symbol and strategy, keeping cross-asset correlation) and see how the
+// gap between average Sharpe ratios varies. The last set is the benchmark.
+void printBootstrap(const std::string& title, const std::vector<ReturnSet>& sets) {
+    const size_t days = sets.front().bySymbol.front().size();
+    for (const auto& set : sets) {
+        for (const auto& returns : set.bySymbol) {
+            if (returns.size() != days) {
+                throw std::runtime_error("Return series of different lengths in " + title);
+            }
+        }
+    }
+
+    // Pairs to compare: every strategy against the benchmark, then strategies against each other
+    std::vector<std::pair<size_t, size_t>> pairs;
+    const size_t benchmark = sets.size() - 1;
+    for (size_t a = 0; a < benchmark; ++a) {
+        pairs.emplace_back(a, benchmark);
+    }
+    for (size_t a = 0; a < benchmark; ++a) {
+        for (size_t b = a + 1; b < benchmark; ++b) {
+            pairs.emplace_back(b, a);
+        }
+    }
+
+    std::vector<double> actual;
+    for (const auto& set : sets) {
+        actual.push_back(meanSharpeOfReturns(set.bySymbol, nullptr));
+    }
+    std::vector<std::vector<double>> gaps(pairs.size());
+    std::mt19937 generator(BOOTSTRAP_SEED);
+    for (size_t rep = 0; rep < BOOTSTRAP_RESAMPLES; ++rep) {
+        const std::vector<size_t> indices =
+            blockBootstrapIndices(days, BOOTSTRAP_BLOCK_DAYS, generator);
+        std::vector<double> sharpe;
+        for (const auto& set : sets) {
+            sharpe.push_back(meanSharpeOfReturns(set.bySymbol, &indices));
+        }
+        for (size_t p = 0; p < pairs.size(); ++p) {
+            gaps[p].push_back(sharpe[pairs[p].first] - sharpe[pairs[p].second]);
+        }
+    }
+
+    std::cout << "\n### " << title << "\n\n"
+              << BOOTSTRAP_RESAMPLES << " resamples of " << days << " daily returns in "
+              << BOOTSTRAP_BLOCK_DAYS << "-day blocks; average Sharpe across symbols.\n\n"
+              << "| Comparison | Sharpe gap | 95% range | First ahead in |\n"
+              << "|---|---:|---:|---:|\n";
+    for (size_t p = 0; p < pairs.size(); ++p) {
+        const auto& [a, b] = pairs[p];
+        const double ahead =
+            static_cast<double>(std::count_if(gaps[p].begin(), gaps[p].end(),
+                                              [](double gap) { return gap > 0.0; })) /
+            static_cast<double>(BOOTSTRAP_RESAMPLES);
+        std::cout << "| " << sets[a].name << " minus " << sets[b].name << " | "
+                  << fixed2(actual[a] - actual[b]) << " | " << fixed2(percentile(gaps[p], 0.025))
+                  << " to " << fixed2(percentile(gaps[p], 0.975)) << " | " << percent(ahead)
+                  << " |\n";
+    }
+}
+
+ReturnSet returnsOf(const std::string& name, const std::vector<Row>& rows) {
+    ReturnSet set{name, {}};
+    for (const auto& row : rows) {
+        set.bySymbol.push_back(dailyReturns(row.result.equityCurve));
+    }
+    return set;
+}
+
+struct WalkForward {
+    std::vector<int> years;
+    std::vector<std::vector<std::string>> chosen;       // [family][year]
+    std::vector<std::vector<double>> yearlySharpe;      // [strategy][year], benchmark last
+    std::vector<ReturnSet> returns;                     // per strategy, benchmark last
+};
+
+// Re-choose each family's parameters every year on the TRAIN_YEARS before it and run them
+// on that year alone. Every year starts flat with fresh capital, so each strategy (and the
+// benchmark) re-enters on the first day and closes out on the last day of every year.
+WalkForward runWalkForward(const std::vector<Family>& families,
+                           const std::vector<PriceHistory>& universe) {
+    WalkForward wf;
+    wf.chosen.resize(families.size());
+    wf.yearlySharpe.resize(families.size() + 1);
+    for (const auto& family : families) {
+        wf.returns.push_back({family.displayName, {}});
+    }
+    wf.returns.push_back({"Buy-and-hold", {}});
+    for (auto& set : wf.returns) {
+        set.bySymbol.resize(universe.size());
+    }
+
+    for (int year = FIRST_TEST_YEAR; year <= LAST_TEST_YEAR; ++year) {
+        wf.years.push_back(year);
+        const Window train{"wf_train", "Walk-forward train",
+                           std::to_string(year - TRAIN_YEARS) + "-01-01",
+                           std::to_string(year - 1) + "-12-31"};
+        const Window test{"wf_test", "Walk-forward test", std::to_string(year) + "-01-01",
+                          std::to_string(year) + "-12-31"};
+        std::vector<WindowData> trainData;
+        std::vector<WindowData> testData;
+        for (const auto& history : universe) {
+            trainData.push_back(sliceWindow(history, train));
+            testData.push_back(sliceWindow(history, test));
+        }
+
+        const auto runOnTest = [&](Strategy& strategy, size_t setIndex) {
+            double sharpeSum = 0.0;
+            for (size_t s = 0; s < universe.size(); ++s) {
+                const BacktestResult result = runStrategy(strategy, testData[s]);
+                sharpeSum += result.sharpeRatio;
+                const std::vector<double> returns = dailyReturns(result.equityCurve);
+                auto& stitched = wf.returns[setIndex].bySymbol[s];
+                stitched.insert(stitched.end(), returns.begin(), returns.end());
+            }
+            wf.yearlySharpe[setIndex].push_back(sharpeSum / static_cast<double>(universe.size()));
+        };
+
+        for (size_t f = 0; f < families.size(); ++f) {
+            const Family& family = families[f];
+            size_t best = 0;
+            double bestSharpe = 0.0;
+            for (size_t g = 0; g < family.grid.size(); ++g) {
+                const std::unique_ptr<Strategy> strategy = family.make(family.grid[g]);
+                double sum = 0.0;
+                for (const auto& data : trainData) {
+                    sum += runStrategy(*strategy, data).sharpeRatio;
+                }
+                const double mean = sum / static_cast<double>(trainData.size());
+                if (g == 0 || mean > bestSharpe) {
+                    best = g;
+                    bestSharpe = mean;
+                }
+            }
+            wf.chosen[f].push_back(paramLabel(family, family.grid[best]));
+            const std::unique_ptr<Strategy> chosen = family.make(family.grid[best]);
+            runOnTest(*chosen, f);
+        }
+        BuyAndHoldStrategy buyAndHold;
+        runOnTest(buyAndHold, families.size());
+    }
+    return wf;
+}
+
+struct StitchedMetrics {
+    double cagr = 0.0;
+    double sharpe = 0.0;
+    double maxDrawdown = 0.0;
+};
+
+// Averages across symbols of each symbol's compounded walk-forward record.
+StitchedMetrics stitchedMetrics(const ReturnSet& set) {
+    StitchedMetrics m;
+    for (const auto& returns : set.bySymbol) {
+        std::vector<double> equity = {INITIAL_CAPITAL};
+        for (double r : returns) {
+            equity.push_back(equity.back() * (1.0 + r));
+        }
+        m.cagr += annualizeReturn(equity.back() / INITIAL_CAPITAL - 1.0, returns.size());
+        m.sharpe += calculateSharpeRatioFromReturns(returns, RISK_FREE_RATE);
+        m.maxDrawdown += calculateMaxDrawdown(equity);
+    }
+    const double n = static_cast<double>(set.bySymbol.size());
+    m.cagr /= n;
+    m.sharpe /= n;
+    m.maxDrawdown /= n;
+    return m;
+}
+
+void printWalkForward(const std::vector<Family>& families, const WalkForward& wf) {
+    const size_t benchmark = families.size();
+    std::cout << "\n### Walk-forward, " << wf.years.front() << " to " << wf.years.back()
+              << "\n\nEach year's parameters are chosen on the " << TRAIN_YEARS
+              << " years before it, by average Sharpe across symbols, then run on that year "
+                 "alone.\n\n| Year |";
+    for (const auto& family : families) {
+        std::cout << " " << family.shortName << " chosen | " << family.shortName << " Sharpe |";
+    }
+    std::cout << " B&H Sharpe |\n|---|";
+    for (size_t f = 0; f < families.size(); ++f) {
+        std::cout << "---|---:|";
+    }
+    std::cout << "---:|\n";
+    for (size_t y = 0; y < wf.years.size(); ++y) {
+        std::cout << "| " << wf.years[y] << " |";
+        for (size_t f = 0; f < families.size(); ++f) {
+            std::cout << " " << wf.chosen[f][y] << " | " << fixed2(wf.yearlySharpe[f][y]) << " |";
+        }
+        std::cout << " " << fixed2(wf.yearlySharpe[benchmark][y]) << " |\n";
+    }
+
+    std::cout << "\n| Strategy, all test years compounded | CAGR | Sharpe | Max DD "
+                 "| Years ahead of B&H |\n|---|---:|---:|---:|---:|\n";
+    for (size_t s = 0; s < wf.returns.size(); ++s) {
+        const StitchedMetrics m = stitchedMetrics(wf.returns[s]);
+        size_t ahead = 0;
+        for (size_t y = 0; y < wf.years.size(); ++y) {
+            ahead += wf.yearlySharpe[s][y] > wf.yearlySharpe[benchmark][y] ? 1 : 0;
+        }
+        std::cout << "| " << wf.returns[s].name << " | " << percent(m.cagr) << " | "
+                  << fixed2(m.sharpe) << " | " << percent(m.maxDrawdown) << " | "
+                  << (s == benchmark ? std::string("-")
+                                     : std::to_string(ahead) + " of " +
+                                           std::to_string(wf.years.size()))
+                  << " |\n";
+    }
+}
+
+// The out-of-sample results with every strategy's chosen parameters, at several multiples of
+// the study's trading costs.
+void printCostSensitivity(const std::vector<FamilyResults>& results,
+                          const std::vector<WindowData>& outOfSample) {
+    std::cout << "\n### Cost sensitivity, " << OUT_OF_SAMPLE.start.substr(0, 4) << " to "
+              << OUT_OF_SAMPLE.end.substr(0, 4)
+              << "\n\nThe chosen parameters at multiples of the study's costs (1x = "
+              << COMMISSION_RATE * 100.0 << "% commission + " << SLIPPAGE_BPS
+              << " bps slippage per side). Average of " << outOfSample.size()
+              << " symbols.\n\n| Costs |";
+    for (const auto& r : results) {
+        std::cout << " " << r.family->shortName << " CAGR | " << r.family->shortName
+                  << " Sharpe |";
+    }
+    std::cout << " B&H CAGR | B&H Sharpe |\n|---|";
+    for (size_t f = 0; f <= results.size(); ++f) {
+        std::cout << "---:|---:|";
+    }
+    std::cout << "\n";
+
+    for (double multiplier : {0.0, 1.0, 2.0, 3.0}) {
+        std::cout << "| " << multiplier << "x |";
+        const auto printAverages = [&](Strategy& strategy) {
+            double cagr = 0.0;
+            double sharpe = 0.0;
+            for (const auto& data : outOfSample) {
+                const BacktestResult result = runStrategy(strategy, data, multiplier);
+                cagr += result.annualizedReturn;
+                sharpe += result.sharpeRatio;
+            }
+            const double n = static_cast<double>(outOfSample.size());
+            std::cout << " " << percent(cagr / n) << " | " << fixed2(sharpe / n) << " |";
+        };
+        for (const auto& r : results) {
+            const std::unique_ptr<Strategy> strategy = r.family->make(r.chosen);
+            printAverages(*strategy);
+        }
+        BuyAndHoldStrategy buyAndHold;
+        printAverages(buyAndHold);
+        std::cout << "\n";
+    }
+}
+
+// Why a symbol can't take part: its history must reach back far enough to warm up the first
+// walk-forward training window and forward to the end of the out-of-sample window.
+std::string coverageProblem(const PriceHistory& history) {
+    const auto& points = history.getDataPoints();
+    const time_t firstNeeded =
+        convertDateToEpoch(std::to_string(FIRST_TEST_YEAR - TRAIN_YEARS) + "-01-01");
+    const time_t lastNeeded = convertDateToEpoch(OUT_OF_SAMPLE.end) - 7 * 86400;
+    const size_t barsBefore = static_cast<size_t>(
+        std::lower_bound(points.begin(), points.end(), firstNeeded,
+                         [](const PricePoint& p, time_t value) { return p.getDate() < value; }) -
+        points.begin());
+    if (points.empty() || barsBefore < MIN_WARMUP_BARS || points.back().getDate() < lastNeeded) {
+        const std::string range = points.empty() ? "no data"
+                                                 : points.front().getDateString() + " to " +
+                                                       points.back().getDateString();
+        return "history " + range + " does not cover " +
+               std::to_string(FIRST_TEST_YEAR - TRAIN_YEARS) + " (with warm-up) to " +
+               OUT_OF_SAMPLE.end;
+    }
+    return "";
+}
+
+void writeWalkForwardChart(const fs::path& chartsDir, const std::vector<Family>& families,
+                           const WalkForward& wf, size_t symbols) {
+    LineChart chart;
+    chart.title = "Walk-forward: average Sharpe ratio in each test year";
+    chart.subtitle = "Parameters re-chosen every year on the " + std::to_string(TRAIN_YEARS) +
+                     " years before it. Average of " + std::to_string(symbols) + " symbols.";
+    for (int year : wf.years) {
+        chart.dates.push_back(std::to_string(year) + "-07-01");
+    }
+    chart.format = ValueFormat::Decimal;
+    for (size_t f = 0; f < families.size(); ++f) {
+        chart.series.push_back({families[f].displayName, families[f].color, wf.yearlySharpe[f]});
+    }
+    chart.series.push_back({"Buy-and-hold", SeriesColor::Benchmark, wf.yearlySharpe.back()});
+    writeFile(chartsDir / "walk_forward.svg", renderLineChart(chart));
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
     try {
         const fs::path dataDir = argc > 1 ? argv[1] : "data/market";
         const fs::path resultsDir = argc > 2 ? argv[2] : "results";
+        const std::string universeLabel = argc > 3 ? argv[3] : "";
         fs::create_directories(resultsDir);
 
-        const std::vector<PriceHistory> universe = loadUniverse(dataDir);
+        // Only symbols whose history covers the whole study take part
+        std::vector<PriceHistory> universe;
+        std::vector<std::string> excluded;
+        for (const auto& history : loadUniverse(dataDir)) {
+            const std::string problem = coverageProblem(history);
+            if (problem.empty()) {
+                universe.push_back(history);
+            } else {
+                excluded.push_back(history.getAssetSymbol() + ": " + problem);
+            }
+        }
+        if (universe.empty()) {
+            throw std::runtime_error("No symbol in " + dataDir.string() +
+                                     " covers the study period");
+        }
         std::vector<WindowData> inSample;
         std::vector<WindowData> outOfSample;
         for (const auto& history : universe) {
@@ -710,12 +1072,33 @@ int main(int argc, char* argv[]) {
                   << "Symbols: " << universe.size() << ". Costs: " << COMMISSION_RATE * 100.0
                   << "% commission + " << SLIPPAGE_BPS
                   << " bps slippage per side. Fills at next open. No interest on cash.\n";
+        for (const auto& reason : excluded) {
+            std::cout << "\nExcluded " << reason << ".\n";
+        }
         for (const auto& r : results) {
             printFamily(r, buyAndHoldIn, buyAndHoldOut);
         }
         printSideBySide(results, buyAndHoldIn, buyAndHoldOut);
-        writeCharts(resultsDir / "charts", universe, outOfSample, results, buyAndHoldIn,
-                    buyAndHoldOut);
+
+        std::cout << "\n## Robustness\n";
+        std::vector<ReturnSet> outOfSampleReturns;
+        for (const auto& r : results) {
+            outOfSampleReturns.push_back(returnsOf(r.family->displayName, r.outOfSample));
+        }
+        outOfSampleReturns.push_back(returnsOf("Buy-and-hold", buyAndHoldOut));
+        printBootstrap("Confidence intervals, " + OUT_OF_SAMPLE.start.substr(0, 4) + " to " +
+                           OUT_OF_SAMPLE.end.substr(0, 4),
+                       outOfSampleReturns);
+        const WalkForward walkForward = runWalkForward(families, universe);
+        printWalkForward(families, walkForward);
+        printBootstrap("Confidence intervals, walk-forward " + std::to_string(FIRST_TEST_YEAR) +
+                           " to " + std::to_string(LAST_TEST_YEAR),
+                       walkForward.returns);
+        printCostSensitivity(results, outOfSample);
+
+        writeCharts(resultsDir / "charts", universe, universeLabel, outOfSample, results,
+                    buyAndHoldIn, buyAndHoldOut);
+        writeWalkForwardChart(resultsDir / "charts", families, walkForward, universe.size());
         std::cout << "\nCSV results written to " << resultsDir.string() << "/\n";
         return 0;
     } catch (const std::exception& e) {
