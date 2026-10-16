@@ -22,10 +22,25 @@ src/
 ├── risk/           Position sizing, slippage modeling, moving averages for hedging
 ├── simulation/     Monte Carlo simulation
 └── backtest/       Strategy interface, backtest engine, performance metrics
-strategies/         Strategy implementations (mean reversion)
+strategies/         Strategy implementations (mean reversion, buy-and-hold)
+apps/               Study programs (mean_reversion_study)
+scripts/            Market data download (fetch_market_data.sh)
+docs/               Study write-ups
+results/            Study outputs
 tests/              Google Test suite, one file per module
 data/               Static CSV fixtures for reproducible testing
 ```
+
+## Results: Mean Reversion vs Buy-and-Hold
+
+A z-score mean reversion strategy tested on SPY, AAPL, MSFT, JPM, XOM and KO, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024. Commission, slippage and next-day fills are included.
+
+| 2020–2024, out of sample | CAGR | Sharpe | Max drawdown | Time in market |
+|---|---:|---:|---:|---:|
+| Mean reversion (average of 6) | 4.5% | 0.30 | 33.7% | 24% |
+| Buy-and-hold (average of 6) | 16.7% | 0.67 | 39.6% | 100% |
+
+Buying dips did not beat holding: none of the 32 parameter sets tested did. Dips that recovered within two weeks won 94% of the time, while trades still open after a month mostly lost. See [the full write-up](docs/phase-3-results.md).
 
 ## Modules
 
@@ -37,7 +52,7 @@ data/               Static CSV fixtures for reproducible testing
 | **Risk** | Stop-based position sizing with a leverage cap, volatility-based slippage model, short/long moving averages for a hedging rule |
 | **Simulation** | Monte Carlo test of a dual SMA(20/50) crossover rule on bootstrapped price paths |
 | **Backtest** | Long-only engine with next-open fills, commission, slippage, interest on idle cash; Sharpe, Sortino, max drawdown, Calmar, trade statistics |
-| **Strategies** | Z-score mean reversion |
+| **Strategies** | Z-score mean reversion; buy-and-hold benchmark |
 
 ## Data Loading
 
@@ -105,12 +120,12 @@ MeanReversionStrategy strategy(20, 2.0, 0.0);  // lookback, entry z, exit z
 BacktestResult result = BacktestEngine(config).run(strategy, aapl);
 ```
 
-A strategy decides after each bar's close and is filled at the next bar's open. It sees only bars up to the current one, and the engine tells it whether it is currently long, so the strategy itself doesn't need to track its position. `FillTiming::SAME_CLOSE` fills at the signal bar's close instead, for comparison.
+A strategy decides after each bar's close and is filled at the next bar's open. It sees only bars up to the current one, and the engine tells it whether it is currently long, so the strategy itself doesn't need to track its position. `FillTiming::SAME_CLOSE` fills at the signal bar's close instead, for comparison. Set `config.warmupBars` to give the strategy history before the test window: those bars are visible to it, but trading and every metric start after them.
 
 ## Roadmap
 
 - [x] **Phase 1:** Foundation hardening (CMake, tests, CI, bug fixes, CSV support)
-- [ ] **Phase 2:** Backtesting engine (strategy interface, engine, performance metrics)
-- [ ] **Phase 3:** Mean reversion backtest with documented results
+- [x] **Phase 2:** Backtesting engine (strategy interface, engine, performance metrics)
+- [x] **Phase 3:** Mean reversion backtest with documented results ([write-up](docs/phase-3-results.md))
 - [ ] **Phase 4:** Second strategy (dual MA crossover) + comparison
 - [ ] **Phase 5:** Polish, visualizations, results-first README
