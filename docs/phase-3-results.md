@@ -64,6 +64,10 @@ The result is not an artifact of picking one parameter set:
 - **31 of 32** parameter sets still made money out of sample, so the effect is real but small.
 - **0 of 32** beat buy-and-hold's average Sharpe ratio of 0.67.
 
+![Every parameter set's out-of-sample Sharpe ratio against buy-and-hold](../results/charts/parameter_sensitivity.svg)
+
+*The crossover row comes from [Phase 4](phase-4-results.md).*
+
 ## Why it fell short
 
 **1. It is out of the market most of the time.** The strategy holds a position on about 24% of days. In a decade when these stocks mostly rose, sitting in cash for the other 76% costs more than buying dips gains.
