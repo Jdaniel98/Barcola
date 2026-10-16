@@ -29,11 +29,12 @@ barcola_add_test(test_slippage)
 barcola_add_test(test_dynamic_hedging)
 barcola_add_test(test_monte_carlo)
 barcola_add_test(test_csv_io)
+barcola_add_test(test_svg_chart)
 
 # Phase 2: backtest tests need strategies library too
 function(barcola_add_backtest_test name)
     add_executable(${name} ${name}.cpp)
-    target_link_libraries(${name} PRIVATE barcola barcola_strategies GTest::gtest_main)
+    target_link_libraries(${name} PRIVATE barcola_strategies GTest::gtest_main)
     target_include_directories(${name} PRIVATE
         ${PROJECT_SOURCE_DIR}/src
         ${PROJECT_SOURCE_DIR}/strategies)

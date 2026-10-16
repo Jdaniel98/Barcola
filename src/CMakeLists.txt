@@ -14,6 +14,7 @@ add_library(barcola STATIC
     simulation/monte_carlo.cpp
     backtest/performance.cpp
     backtest/backtest_engine.cpp
+    report/svg_chart.cpp
 )
 
 target_include_directories(barcola PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
