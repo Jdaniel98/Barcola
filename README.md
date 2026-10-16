@@ -2,7 +2,7 @@
 
 A quantitative trading toolkit written from scratch in C++17, used to answer one question: **do two classic trading strategies, buying sharp dips and following trends, beat simply holding the stock?**
 
-On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs: **no.** Following trends came close on a risk-adjusted basis; buying dips fell well short.
+**No.** On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs, buying dips fell well short of holding and following trends came close. A robustness study then checked those results against chance, against re-choosing parameters every year, and on 29 Dow stocks picked without hindsight. It confirmed that buying dips loses. Trend following's near-tie turned out to depend on the six hand-picked stocks: on the Dow, and in every year of the walk-forward test, it trailed holding as well.
 
 ![Growth of $100,000 in each strategy, 2020–2024](results/charts/growth.svg)
 
@@ -26,6 +26,21 @@ On six large US stocks and ETFs, with parameters chosen on 2014–2019 and teste
 
 ![Drawdown from peak for each strategy, 2020–2024](results/charts/drawdown.svg)
 
+## How robust is this?
+
+Four checks, on the original six symbols and on the 29 stocks of the Dow Jones index as of January 2014 ([Phase 6 write-up](docs/phase-6-robustness.md)):
+
+| Check | Mean reversion vs buy-and-hold | MA crossover vs buy-and-hold |
+|---|---|---|
+| Luck: 1,000 block-bootstrap resamples | Behind; ahead in under 5% of resamples in 3 of 4 tests | Tied only in the original test; ahead in under 5% in the other 3 |
+| Walk-forward 2016–2024, parameters re-chosen yearly | Ahead in 2–3 of 9 years, including 2018 and 2022, when holding earned about nothing | **Ahead in 0 of 9 years**, on both universes |
+| Trading costs from 0× to 3× | Behind even with free trading | Behind even with free trading |
+| 29 Dow stocks instead of 6 hand-picked ones | 1.8% a year against 8.6% | 2.9% a year against 8.6% |
+
+![Walk-forward: average Sharpe ratio in each test year, 29 Dow stocks](results/dow30/charts/walk_forward.svg)
+
+The firmest result is that mean reversion, as tested, loses to holding. Neither strategy has a stable best setting: the parameters chosen each year keep changing. And the six original stocks flattered every approach, buy-and-hold most of all (16.7% a year on them, 8.6% on the Dow stocks).
+
 ## How the test was run
 
 | | |
@@ -38,7 +53,7 @@ On six large US stocks and ETFs, with parameters chosen on 2014–2019 and teste
 | Costs | 0.1% commission and 5 bps slippage on every buy and sell |
 | Look-ahead | Strategies only ever see bars up to the current one |
 
-**Caveats.** The symbols are well-known companies chosen with hindsight, which flatters buy-and-hold. Idle cash earns no interest. Each symbol has only 16–30 mean-reversion trades and 3–8 crossover trades per period, so the averages across symbols mean more than any single row. And the 2020–2024 period has now been used by both studies, so any new idea built on these findings needs testing on data neither has seen. Details are in the write-ups.
+**Caveats.** The six main symbols are well-known companies chosen with hindsight, which flatters buy-and-hold; the Phase 6 Dow universe checks how much. Idle cash earns no interest. Each symbol has only 16–30 mean-reversion trades and 3–8 crossover trades per period, so the averages across symbols mean more than any single row. And the 2020–2024 period has now been used by both studies, so any new idea built on these findings needs testing on data neither has seen. Details are in the write-ups.
 
 ## Reproducing the results
 
@@ -47,10 +62,14 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 scripts/fetch_market_data.sh                   # needs a free Tiingo API token
-build/apps/strategy_study data/market results
+build/apps/strategy_study data/market results > results/study_output.md
+
+# Phase 6 universe: 29 Dow stocks as of 2014
+scripts/fetch_market_data.sh --out data/dow30 $(grep -v '^#' scripts/universes/dow30_2014.txt)
+build/apps/strategy_study data/dow30 results/dow30 "29 Dow stocks as of 2014" > results/dow30/study_output.md
 ```
 
-The study prints every table in the write-ups to `results/study_output.md` and redraws the charts in `results/charts/`. A rerun reproduces the committed results exactly. Tiingo's terms restrict redistributing its prices, so the downloaded data and the outputs that contain prices (trades and daily equity) are kept out of git.
+Each run prints every table in the write-ups and redraws the charts in its `charts/` folder. A rerun reproduces the committed results exactly. Tiingo's terms restrict redistributing its prices, so the downloaded data and the outputs that contain prices (trades and daily equity) are kept out of git.
 
 **Requirements:** a C++17 compiler, CMake 3.16+ and libcurl. The download script needs curl and python3.
 
@@ -60,7 +79,7 @@ The study prints every table in the write-ups to `results/study_output.md` and r
 |---|---|
 | **Core** | Daily bars kept in date order; CSV import and export with split and dividend adjustment; Yahoo Finance download; date utilities |
 | **Indicators** | Simple and exponential moving averages, Wilder's RSI, Bollinger Bands |
-| **Analysis** | Deviation from a moving average, return correlation between assets (aligned by date), annualized volatility |
+| **Analysis** | Deviation from a moving average, return correlation between assets (aligned by date), annualized volatility, block bootstrap |
 | **Risk** | Stop-based position sizing with a leverage cap, a volatility-based slippage model |
 | **Simulation** | Monte Carlo test of a moving-average crossover on bootstrapped price paths |
 | **Backtest** | Long-only engine with next-open fills, commission, slippage, warm-up history and interest on idle cash; Sharpe, Sortino, max drawdown, Calmar and trade statistics |
@@ -71,7 +90,7 @@ The study prints every table in the write-ups to `results/study_output.md` and r
 src/          core/ indicators/ analysis/ risk/ simulation/ backtest/ report/
 strategies/   Strategy implementations
 apps/         strategy_study: the study behind the results above
-scripts/      fetch_market_data.sh: Tiingo download
+scripts/      fetch_market_data.sh: Tiingo download; universes/: fixed symbol lists
 docs/         Study write-ups
 results/      Study outputs and charts
 tests/        Google Test suite, one file per module
@@ -130,7 +149,7 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 
 ## Engineering
 
-- **197 tests in 20 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
+- **210 tests in 21 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
 - **Known-value tests for the math.** RSI, correlation, volatility, drawdown, annualized return, Bollinger Bands and the backtest's fills and sizing are checked against hand-calculated or independently computed values.
 - **Built to avoid backtest traps.** Strategies cannot see future bars, fills happen the next day, costs apply to every trade, and the engine, not the strategy, is the record of what is held.
 - **Reproducible.** Same data, same results, byte for byte. The Monte Carlo simulation uses a fixed seed and a standard-defined generator.
@@ -142,3 +161,4 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 - [x] **Phase 3:** Mean reversion backtest with documented results ([write-up](docs/phase-3-results.md))
 - [x] **Phase 4:** Second strategy (dual MA crossover) + comparison ([write-up](docs/phase-4-results.md))
 - [x] **Phase 5:** Charts and a results-first README
+- [x] **Phase 6:** Robustness: bootstrap intervals, walk-forward, cost sensitivity, 29 Dow stocks ([write-up](docs/phase-6-robustness.md))

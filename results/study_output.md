@@ -127,4 +127,59 @@ Out-of-sample, 8 of 8 parameter sets have a positive mean Sharpe and 1 beat buy-
 | XOM | 0.26 |
 | **Average** | 0.47 |
 
+## Robustness
+
+### Confidence intervals, 2020 to 2024
+
+1000 resamples of 1257 daily returns in 21-day blocks; average Sharpe across symbols.
+
+| Comparison | Sharpe gap | 95% range | First ahead in |
+|---|---:|---:|---:|
+| Mean reversion minus Buy-and-hold | -0.37 | -0.74 to 0.05 | 4.2% |
+| MA crossover minus Buy-and-hold | -0.03 | -0.28 to 0.23 | 43.0% |
+| MA crossover minus Mean reversion | 0.35 | -0.11 to 0.72 | 93.1% |
+
+### Walk-forward, 2016 to 2024
+
+Each year's parameters are chosen on the 3 years before it, by average Sharpe across symbols, then run on that year alone.
+
+| Year | MR chosen | MR Sharpe | MA chosen | MA Sharpe | B&H Sharpe |
+|---|---|---:|---|---:|---:|
+| 2016 | lookback=20 entry_z=1.5 exit_z=0.5 | 0.75 | short_window=50 long_window=200 | 0.55 | 0.84 |
+| 2017 | lookback=20 entry_z=2 exit_z=0.5 | 1.26 | short_window=50 long_window=200 | 1.46 | 1.65 |
+| 2018 | lookback=20 entry_z=2 exit_z=0.5 | 0.32 | short_window=50 long_window=200 | -0.15 | -0.01 |
+| 2019 | lookback=20 entry_z=2 exit_z=0.5 | 0.85 | short_window=20 long_window=200 | 1.10 | 1.92 |
+| 2020 | lookback=50 entry_z=1.5 exit_z=0 | -0.06 | short_window=50 long_window=100 | 0.03 | 0.50 |
+| 2021 | lookback=30 entry_z=1 exit_z=0.5 | 0.96 | short_window=20 long_window=50 | 1.09 | 1.64 |
+| 2022 | lookback=30 entry_z=1 exit_z=0.5 | -0.02 | short_window=10 long_window=200 | -0.73 | -0.06 |
+| 2023 | lookback=30 entry_z=1.5 exit_z=0 | 0.79 | short_window=10 long_window=200 | 0.62 | 1.22 |
+| 2024 | lookback=30 entry_z=2.5 exit_z=0.5 | 0.86 | short_window=20 long_window=200 | 0.94 | 1.15 |
+
+| Strategy, all test years compounded | CAGR | Sharpe | Max DD | Years ahead of B&H |
+|---|---:|---:|---:|---:|
+| Mean reversion | 3.2% | 0.28 | 36.7% | 2 of 9 |
+| MA crossover | 9.9% | 0.54 | 39.9% | 0 of 9 |
+| Buy-and-hold | 17.8% | 0.77 | 42.0% | - |
+
+### Confidence intervals, walk-forward 2016 to 2024
+
+1000 resamples of 2255 daily returns in 21-day blocks; average Sharpe across symbols.
+
+| Comparison | Sharpe gap | 95% range | First ahead in |
+|---|---:|---:|---:|
+| Mean reversion minus Buy-and-hold | -0.50 | -0.77 to -0.25 | 0.0% |
+| MA crossover minus Buy-and-hold | -0.23 | -0.41 to -0.02 | 1.7% |
+| MA crossover minus Mean reversion | 0.27 | -0.01 to 0.62 | 97.1% |
+
+### Cost sensitivity, 2020 to 2024
+
+The chosen parameters at multiples of the study's costs (1x = 0.1% commission + 5 bps slippage per side). Average of 6 symbols.
+
+| Costs | MR CAGR | MR Sharpe | MA CAGR | MA Sharpe | B&H CAGR | B&H Sharpe |
+|---|---:|---:|---:|---:|---:|---:|
+| 0x | 5.8% | 0.36 | 14.3% | 0.66 | 16.8% | 0.68 |
+| 1x | 4.5% | 0.30 | 13.9% | 0.65 | 16.7% | 0.67 |
+| 2x | 3.3% | 0.24 | 13.7% | 0.64 | 16.6% | 0.67 |
+| 3x | 2.0% | 0.18 | 13.3% | 0.62 | 16.6% | 0.67 |
+
 CSV results written to results/

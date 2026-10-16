@@ -157,3 +157,30 @@ TEST(PerformanceTest, CalmarRatio_UsesSameAnnualizationAsEngine) {
     const double maxDD = calculateMaxDrawdown(equity);  // 120 -> 90 = 25%
     EXPECT_NEAR(calculateCalmarRatio(equity), annual / maxDD, 1e-12);
 }
+
+// --- Sharpe ratio from returns ---
+
+TEST(PerformanceTest, SharpeFromReturns_KnownValue) {
+    // Returns +1%, -1%, +1%, -1%, +2%: mean 0.4%; squared deviations sum to 0.00072, so the
+    // population std dev is sqrt(0.00072 / 5) = 1.2%
+    const std::vector<double> returns = {0.01, -0.01, 0.01, -0.01, 0.02};
+    const double expected = 0.004 / 0.012 * std::sqrt(252.0);
+    EXPECT_NEAR(calculateSharpeRatioFromReturns(returns, 0.0), expected, 1e-10);
+}
+
+TEST(PerformanceTest, SharpeFromReturns_MatchesEquityCurveVersion) {
+    std::vector<double> equity = {100.0};
+    std::vector<double> returns;
+    for (int i = 0; i < 50; ++i) {
+        const double r = (i % 3 == 0) ? -0.004 : 0.003;
+        returns.push_back(r);
+        equity.push_back(equity.back() * (1.0 + r));
+    }
+    EXPECT_NEAR(calculateSharpeRatioFromReturns(returns, 0.02),
+                calculateSharpeRatio(equity, 0.02), 1e-9);
+}
+
+TEST(PerformanceTest, SharpeFromReturns_EmptyOrFlat_ReturnsZero) {
+    EXPECT_DOUBLE_EQ(calculateSharpeRatioFromReturns({}, 0.0), 0.0);
+    EXPECT_DOUBLE_EQ(calculateSharpeRatioFromReturns({0.0, 0.0, 0.0}, 0.0), 0.0);
+}

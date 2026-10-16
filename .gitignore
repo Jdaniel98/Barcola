@@ -46,5 +46,9 @@ compile_commands.json
 data/market/
 
 # Study outputs that contain prices; regenerate with build/apps/strategy_study
-results/trades.csv
-results/equity_out_of_sample.csv
+# (in every results folder, including results/dow30/)
+results/**/trades.csv
+results/**/equity_out_of_sample.csv
+
+# Phase 6 universe prices from Tiingo, also not redistributable
+data/dow30/
