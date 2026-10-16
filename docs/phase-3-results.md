@@ -6,7 +6,7 @@
 
 The main weakness is easy to see in the trades. Dips that recover within two weeks are almost always profitable. Dips that are still open after a month are mostly losses, and the strategy has no way to get out of them.
 
-All numbers below come from [`results/study_output.md`](../results/study_output.md), produced by `build/apps/mean_reversion_study`. See [Reproducing](#reproducing).
+All numbers below come from [`results/study_output.md`](../results/study_output.md), produced by `build/apps/strategy_study`. See [Reproducing](#reproducing). [Phase 4](phase-4-results.md) compares this strategy with a moving-average crossover.
 
 ## Setup
 
@@ -15,14 +15,14 @@ All numbers below come from [`results/study_output.md`](../results/study_output.
 | Strategy | `MeanReversionStrategy`: z-score of the close against its trailing mean and standard deviation. Buy when z < −entry, sell when z > exit. Long only. |
 | Benchmark | `BuyAndHoldStrategy`: buy on the first day, hold to the end, same costs. |
 | Symbols | SPY, AAPL, MSFT, JPM, XOM, KO. Each is backtested on its own with $100,000. |
-| Data | Tiingo daily prices, adjusted for splits and dividends, 2013-09-03 to 2024-12-31. |
+| Data | Tiingo daily prices, adjusted for splits and dividends, through 2024-12-31. |
 | In-sample | 2014-01-01 to 2019-12-31, used to choose parameters |
 | Out-of-sample | 2020-01-01 to 2024-12-31, run once with the chosen parameters |
 | Fills | Signal on the close, filled at the next day's open |
 | Costs | 0.1% commission and 5 bps slippage on every buy and sell |
 | Sizing | All available cash in each trade, whole shares only |
 | Cash | Earns no interest. Sharpe uses a zero risk-free rate for both strategies. |
-| Warm-up | 51 trading days before each window, used as history only |
+| Warm-up | History before each window, used only to compute the first signals. The strategy looks back at most 50 days. (This study originally used 51 days; Phase 4 raised it to 252 for 200-day averages, and the results here are unchanged.) |
 
 **Parameter selection.** The grid was lookback ∈ {10, 20, 30, 50} days, entry z ∈ {1.0, 1.5, 2.0, 2.5} and exit z ∈ {0.0, 0.5}, which is 32 sets. One set was chosen for all six symbols: the one with the highest average in-sample Sharpe ratio. That was **lookback 20, entry z 2.0, exit z 0.5**. It buys when the close is two standard deviations below its 20-day average and sells once it is half a standard deviation above.
 
@@ -101,17 +101,17 @@ This pattern was already visible in 2014–2019, so a time-based exit is a reaso
 scripts/fetch_market_data.sh                       # needs a free Tiingo API token
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
-build/apps/mean_reversion_study data/market results
+build/apps/strategy_study data/market results
 ```
 
 The study writes:
 
 | File | Contents | In git |
 |---|---|---|
-| `results/study_output.md` | The tables in this document | Yes |
+| `results/study_output.md` | The tables in this document (under "MeanReversion") | Yes |
 | `results/summary.csv` | Every metric for the chosen parameters and buy-and-hold, both periods | Yes |
-| `results/in_sample_grid.csv`, `results/out_of_sample_grid.csv` | Every metric for all 32 parameter sets, per symbol | Yes |
+| `results/mean_reversion_in_sample_grid.csv`, `results/mean_reversion_out_of_sample_grid.csv` | Every metric for all 32 parameter sets, per symbol | Yes |
 | `results/trades.csv` | Every trade of the chosen parameters, with fill prices | No |
-| `results/equity_out_of_sample.csv` | Daily equity for both strategies, 2020–2024 | No |
+| `results/equity_out_of_sample.csv` | Daily equity for every strategy, 2020–2024 | No |
 
 The price data in `data/market/` and the two price-level outputs are kept out of git because Tiingo's terms restrict redistributing its data.
