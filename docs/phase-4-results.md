@@ -22,6 +22,8 @@ Everything else matches [Phase 3](phase-3-results.md#setup): same six symbols, w
 
 ### Side by side, average of six symbols
 
+![Growth of $100,000 in each strategy, 2020–2024](../results/charts/growth.svg)
+
 | 2014–2019, in-sample | CAGR | Sharpe | Max drawdown | Trades | Win rate | In market |
 |---|---:|---:|---:|---:|---:|---:|
 | Mean reversion (20-day, z 2.0 / 0.5) | 7.5% | **0.75** | **15.4%** | 26.0 | 80.6% | 23% |
@@ -55,6 +57,8 @@ The crossover beat buy-and-hold's Sharpe ratio on three symbols (JPM, MSFT, XOM)
 
 For comparison, the chosen mean-reversion set ranked 7th of 32 and none of its 32 beat buy-and-hold ([Phase 3](phase-3-results.md#how-much-the-parameter-choice-matters)).
 
+![Sharpe ratio of each strategy in the selection period and the test period](../results/charts/sharpe_in_vs_out.svg)
+
 ## What the comparison shows
 
 **1. The in-sample ranking reversed.** On 2014–2019, a calm and steadily rising market, buying small dips worked well and trends were mild, so mean reversion looked better. 2020–2024 had a crash, a bear market in 2022 and long trends in both directions, which suits trend following. A strategy chosen because it did best in one kind of market can do worst in the next.
@@ -73,6 +77,8 @@ For comparison, the chosen mean-reversion set ranked 7th of 32 and none of its 3
 Mean reversion wins often and small, and its rare long trades are its big losses. The crossover loses on every short trade, which are false signals that reverse within weeks, and makes all its money on a few long trends. Each strategy's weakness is the other's strength.
 
 **3. Trend following avoids long declines, not fast crashes.** The 200-day average reacts slowly. In March 2020 the crossover sold SPY only after a 23.8% loss, JPM after 30.3% and KO after 22.2%. It then bought SPY back in June, after much of the rebound. Where it helped was XOM. It held no XOM at all during the 2020 energy collapse, then bought in December 2020 and held until June 2023 for a 174% gain. Its worst drawdown on XOM was 20.5%, against buy-and-hold's 55.3%.
+
+![Drawdown from peak for each strategy, 2020–2024](../results/charts/drawdown.svg)
 
 **4. One stock carries much of the edge.** Without XOM, the crossover averages 12.5% a year with a Sharpe of 0.59 and a 32.9% drawdown, against buy-and-hold's 17.3%, 0.70 and 36.5%. With only 3–6 trades per symbol, each symbol's result depends on a handful of trends.
 

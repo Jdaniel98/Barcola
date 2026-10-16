@@ -30,6 +30,7 @@
 #include "core/time_utils.h"
 #include "ma_crossover_strategy.h"
 #include "mean_reversion_strategy.h"
+#include "report/svg_chart.h"
 
 namespace fs = std::filesystem;
 using namespace barcola;
@@ -59,16 +60,19 @@ using Params = std::vector<double>;
 
 // A strategy with a parameter grid to choose from.
 struct Family {
-    std::string name;       // as written to the CSV files, e.g. "MeanReversion"
-    std::string shortName;  // table column prefix, e.g. "MR"
-    std::string fileStem;   // grid file prefix, e.g. "mean_reversion"
+    std::string name;         // as written to the CSV files, e.g. "MeanReversion"
+    std::string displayName;  // for charts, e.g. "Mean reversion"
+    std::string shortName;    // table column prefix, e.g. "MR"
+    std::string fileStem;     // grid file prefix, e.g. "mean_reversion"
+    SeriesColor color;        // the same in every chart
     std::vector<std::string> paramNames;
     std::vector<Params> grid;
     std::function<std::unique_ptr<Strategy>(const Params&)> make;
 };
 
 std::vector<Family> studyFamilies() {
-    Family meanReversion{"MeanReversion", "MR", "mean_reversion",
+    Family meanReversion{"MeanReversion", "Mean reversion", "MR", "mean_reversion",
+                         SeriesColor::First,
                          {"lookback", "entry_z", "exit_z"}, {},
                          [](const Params& p) -> std::unique_ptr<Strategy> {
                              return std::make_unique<MeanReversionStrategy>(
@@ -82,7 +86,8 @@ std::vector<Family> studyFamilies() {
         }
     }
 
-    Family crossover{"MACrossover", "MA", "ma_crossover", {"short_window", "long_window"}, {},
+    Family crossover{"MACrossover", "MA crossover", "MA", "ma_crossover", SeriesColor::Second,
+                     {"short_window", "long_window"}, {},
                      [](const Params& p) -> std::unique_ptr<Strategy> {
                          return std::make_unique<MovingAverageCrossoverStrategy>(
                              static_cast<size_t>(p[0]), static_cast<size_t>(p[1]));
@@ -344,6 +349,8 @@ struct FamilyResults {
     size_t beatBuyAndHoldOutOfSample = 0;
     std::vector<Row> inSample;     // chosen parameters, one row per symbol
     std::vector<Row> outOfSample;  // chosen parameters, one row per symbol
+    std::vector<double> outOfSampleSharpeBySet;  // mean across symbols, in grid order
+    size_t chosenIndex = 0;
 };
 
 FamilyResults studyFamily(const Family& family, const std::vector<PriceHistory>& universe,
@@ -387,6 +394,8 @@ FamilyResults studyFamily(const Family& family, const std::vector<PriceHistory>&
     FamilyResults results;
     results.family = &family;
     results.chosen = family.grid[best];
+    results.chosenIndex = best;
+    results.outOfSampleSharpeBySet = outOfSampleSharpe;
     results.chosenInSampleSharpe = inSampleSharpe[best];
     results.chosenOutOfSampleSharpe = outOfSampleSharpe[best];
     const auto countAbove = [&](double threshold) {
@@ -491,6 +500,130 @@ void printSideBySide(const std::vector<FamilyResults>& families,
     }
 }
 
+// Equity of each symbol's account averaged day by day, i.e. six equal accounts held side by
+// side. All symbols must share the same trading days.
+std::vector<double> averageEquity(const std::vector<Row>& rows) {
+    std::vector<double> average(rows.front().result.equityCurve.size(), 0.0);
+    for (const auto& row : rows) {
+        const auto& curve = row.result.equityCurve;
+        if (curve.size() != average.size()) {
+            throw std::runtime_error("Equity curves differ in length; symbols trade on "
+                                     "different days");
+        }
+        for (size_t k = 0; k < curve.size(); ++k) {
+            average[k] += curve[k] / static_cast<double>(rows.size());
+        }
+    }
+    return average;
+}
+
+std::vector<double> drawdownSeries(const std::vector<double>& equity) {
+    std::vector<double> drawdown;
+    double peak = equity.front();
+    for (double value : equity) {
+        peak = std::max(peak, value);
+        drawdown.push_back(value / peak - 1.0);
+    }
+    return drawdown;
+}
+
+void writeFile(const fs::path& path, const std::string& contents) {
+    std::ofstream out(path);
+    if (!out) {
+        throw std::runtime_error("Cannot write " + path.string());
+    }
+    out << contents;
+}
+
+void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& universe,
+                 const std::vector<WindowData>& outOfSample,
+                 const std::vector<FamilyResults>& families, const std::vector<Row>& buyAndHoldIn,
+                 const std::vector<Row>& buyAndHoldOut) {
+    fs::create_directories(chartsDir);
+
+    // Trading days of the out-of-sample window, which every symbol must share
+    const auto windowDates = [&](size_t s) {
+        std::vector<std::string> dates;
+        const auto& points = outOfSample[s].bars.getDataPoints();
+        for (size_t i = outOfSample[s].warmupBars; i < points.size(); ++i) {
+            dates.push_back(points[i].getDateString());
+        }
+        return dates;
+    };
+    const std::vector<std::string> dates = windowDates(0);
+    for (size_t s = 1; s < universe.size(); ++s) {
+        if (windowDates(s) != dates) {
+            throw std::runtime_error(universe[s].getAssetSymbol() +
+                                     " trades on different days from " +
+                                     universe[0].getAssetSymbol());
+        }
+    }
+
+    std::string symbolList;
+    for (size_t s = 0; s < universe.size(); ++s) {
+        symbolList += (s == 0 ? "" : ", ") + universe[s].getAssetSymbol();
+    }
+    const std::string accounts = "Average of " + std::to_string(universe.size()) +
+                                 " $100,000 accounts (" + symbolList + "), after costs";
+    const std::string outPeriod = OUT_OF_SAMPLE.start.substr(0, 4) + "\xE2\x80\x93" +
+                                  OUT_OF_SAMPLE.end.substr(0, 4);
+    const std::string inPeriod =
+        IN_SAMPLE.start.substr(0, 4) + "\xE2\x80\x93" + IN_SAMPLE.end.substr(0, 4);
+
+    // 1-2. Growth and drawdown of the averaged accounts
+    LineChart growth;
+    growth.title = "Growth of $100,000, " + outPeriod + " (out of sample)";
+    growth.subtitle = accounts;
+    growth.dates = dates;
+    growth.format = ValueFormat::Currency;
+    PanelChart drawdown;
+    drawdown.title = "Drawdown from peak, " + outPeriod + " (out of sample)";
+    drawdown.subtitle = "The same averaged accounts. 0% means at a new high.";
+    drawdown.dates = dates;
+    for (const auto& f : families) {
+        const std::vector<double> equity = averageEquity(f.outOfSample);
+        growth.series.push_back({f.family->displayName, f.family->color, equity});
+        drawdown.series.push_back({f.family->displayName, f.family->color, drawdownSeries(equity)});
+    }
+    const std::vector<double> holdEquity = averageEquity(buyAndHoldOut);
+    growth.series.push_back({"Buy-and-hold", SeriesColor::Benchmark, holdEquity});
+    drawdown.series.push_back({"Buy-and-hold", SeriesColor::Benchmark, drawdownSeries(holdEquity)});
+    writeFile(chartsDir / "growth.svg", renderLineChart(growth));
+    writeFile(chartsDir / "drawdown.svg", renderPanelChart(drawdown));
+
+    // 3. Sharpe ratio in the selection period vs the test period
+    DumbbellChart sharpe;
+    sharpe.title = "Sharpe ratio: selection period vs test period";
+    sharpe.subtitle = "Parameters chosen on " + inPeriod + ", then run unchanged on " +
+                      outPeriod + ". Average of " + std::to_string(universe.size()) +
+                      " symbols.";
+    sharpe.fromLabel = inPeriod + " (in sample)";
+    sharpe.toLabel = outPeriod + " (out of sample)";
+    for (const auto& f : families) {
+        sharpe.rows.push_back({f.family->displayName, f.family->color,
+                               meanSharpe(f.inSample), meanSharpe(f.outOfSample)});
+    }
+    sharpe.rows.push_back({"Buy-and-hold", SeriesColor::Benchmark, meanSharpe(buyAndHoldIn),
+                           meanSharpe(buyAndHoldOut)});
+    writeFile(chartsDir / "sharpe_in_vs_out.svg", renderDumbbellChart(sharpe));
+
+    // 4. Every parameter set out of sample against buy-and-hold
+    StripChart sensitivity;
+    sensitivity.title = "Every parameter set, " + outPeriod + " (out of sample)";
+    sensitivity.subtitle = "One dot per parameter set. Ringed: the set chosen on " + inPeriod +
+                           ".";
+    sensitivity.axisLabel = "Average Sharpe ratio across " + std::to_string(universe.size()) +
+                            " symbols, " + outPeriod;
+    for (const auto& f : families) {
+        sensitivity.rows.push_back({f.family->displayName + " (" +
+                                        std::to_string(f.family->grid.size()) + " sets)",
+                                    f.family->color, f.outOfSampleSharpeBySet, f.chosenIndex,
+                                    "chosen"});
+    }
+    sensitivity.reference = ReferenceLine{"Buy-and-hold", meanSharpe(buyAndHoldOut)};
+    writeFile(chartsDir / "parameter_sensitivity.svg", renderStripChart(sensitivity));
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -581,6 +714,8 @@ int main(int argc, char* argv[]) {
             printFamily(r, buyAndHoldIn, buyAndHoldOut);
         }
         printSideBySide(results, buyAndHoldIn, buyAndHoldOut);
+        writeCharts(resultsDir / "charts", universe, outOfSample, results, buyAndHoldIn,
+                    buyAndHoldOut);
         std::cout << "\nCSV results written to " << resultsDir.string() << "/\n";
         return 0;
     } catch (const std::exception& e) {
