@@ -22,8 +22,8 @@ src/
 ├── risk/           Position sizing, slippage modeling, moving averages for hedging
 ├── simulation/     Monte Carlo simulation
 └── backtest/       Strategy interface, backtest engine, performance metrics
-strategies/         Strategy implementations (mean reversion, buy-and-hold)
-apps/               Study programs (mean_reversion_study)
+strategies/         Strategy implementations (mean reversion, MA crossover, buy-and-hold)
+apps/               Study programs (strategy_study)
 scripts/            Market data download (fetch_market_data.sh)
 docs/               Study write-ups
 results/            Study outputs
@@ -31,16 +31,18 @@ tests/              Google Test suite, one file per module
 data/               Static CSV fixtures for reproducible testing
 ```
 
-## Results: Mean Reversion vs Buy-and-Hold
+## Results
 
-A z-score mean reversion strategy tested on SPY, AAPL, MSFT, JPM, XOM and KO, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024. Commission, slippage and next-day fills are included.
+Two strategies tested on SPY, AAPL, MSFT, JPM, XOM and KO, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024. Commission, slippage and next-day fills are included.
 
-| 2020–2024, out of sample | CAGR | Sharpe | Max drawdown | Time in market |
+| 2020–2024, out of sample, average of 6 | CAGR | Sharpe | Max drawdown | Time in market |
 |---|---:|---:|---:|---:|
-| Mean reversion (average of 6) | 4.5% | 0.30 | 33.7% | 24% |
-| Buy-and-hold (average of 6) | 16.7% | 0.67 | 39.6% | 100% |
+| Mean reversion: buy sharp dips | 4.5% | 0.30 | 33.7% | 24% |
+| MA crossover: hold while the 20-day average is above the 200-day | 13.9% | 0.65 | 30.8% | 76% |
+| Buy-and-hold | 16.7% | 0.67 | 39.6% | 100% |
 
-Buying dips did not beat holding: none of the 32 parameter sets tested did. Dips that recovered within two weeks won 94% of the time, while trades still open after a month mostly lost. See [the full write-up](docs/phase-3-results.md).
+- **Buying dips did not beat holding**, whichever of the 32 parameter sets was used. Dips that recovered within two weeks won 94% of the time, but trades still open after a month mostly lost. [Phase 3 write-up](docs/phase-3-results.md).
+- **Trend following came close on risk-adjusted terms** with smaller drawdowns, but earned less than holding, and one stock (XOM) accounts for much of its edge. On 2014–2019 the ranking was reversed: mean reversion looked better. [Phase 4 write-up](docs/phase-4-results.md).
 
 ## Modules
 
@@ -52,7 +54,7 @@ Buying dips did not beat holding: none of the 32 parameter sets tested did. Dips
 | **Risk** | Stop-based position sizing with a leverage cap, volatility-based slippage model, short/long moving averages for a hedging rule |
 | **Simulation** | Monte Carlo test of a dual SMA(20/50) crossover rule on bootstrapped price paths |
 | **Backtest** | Long-only engine with next-open fills, commission, slippage, interest on idle cash; Sharpe, Sortino, max drawdown, Calmar, trade statistics |
-| **Strategies** | Z-score mean reversion; buy-and-hold benchmark |
+| **Strategies** | Z-score mean reversion; moving-average crossover; buy-and-hold benchmark |
 
 ## Data Loading
 
@@ -127,5 +129,5 @@ A strategy decides after each bar's close and is filled at the next bar's open. 
 - [x] **Phase 1:** Foundation hardening (CMake, tests, CI, bug fixes, CSV support)
 - [x] **Phase 2:** Backtesting engine (strategy interface, engine, performance metrics)
 - [x] **Phase 3:** Mean reversion backtest with documented results ([write-up](docs/phase-3-results.md))
-- [ ] **Phase 4:** Second strategy (dual MA crossover) + comparison
+- [x] **Phase 4:** Second strategy (dual MA crossover) + comparison ([write-up](docs/phase-4-results.md))
 - [ ] **Phase 5:** Polish, visualizations, results-first README

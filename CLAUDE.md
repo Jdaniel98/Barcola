@@ -12,8 +12,8 @@ on real market data, with verified math, professional engineering, and documente
 - `src/risk/` — Risk management: position sizing, slippage modeling, dynamic hedging
 - `src/simulation/` — Monte Carlo simulation
 - `src/backtest/` — (Phase 2) Backtesting engine, strategy interface, performance metrics
-- `strategies/` — Strategy implementations (mean reversion, buy-and-hold benchmark)
-- `apps/` — Study programs, e.g. `mean_reversion_study` (Phase 3)
+- `strategies/` — Strategy implementations (mean reversion, MA crossover, buy-and-hold benchmark)
+- `apps/` — Study programs: `strategy_study` (Phases 3 and 4)
 - `scripts/` — `fetch_market_data.sh` downloads Tiingo prices into `data/market/`
 - `docs/` — Study write-ups; `results/` — study outputs
 - `tests/` — Google Test suite, one test file per module
