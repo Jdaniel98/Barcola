@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720.0" height="368.0" viewBox="0 0 720.0 368.0" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Every parameter set, 2020–2024 (out of sample)</title>
+<desc id="chart-desc">One dot per parameter set. Ringed: the set chosen on 2014–2019.</desc>
+<style>
+text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.bg{fill:#fcfcfb;stroke:rgba(11,11,11,0.10)}
+.title{fill:#0b0b0b;font-size:16px;font-weight:600}
+.sub{fill:#52514e;font-size:13px}
+.ink{fill:#0b0b0b;font-size:12px}
+.ink2{fill:#52514e;font-size:12px}
+.tick{fill:#898781;font-size:12px;font-variant-numeric:tabular-nums}
+.grid{stroke:#e1e0d9;stroke-width:1}
+.axis{stroke:#c3c2b7;stroke-width:1}
+.line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.c1{stroke:#2a78d6}.d1{fill:#2a78d6}
+.c2{stroke:#eb6834}.d2{fill:#eb6834}
+.cb{stroke:#898781}.db{fill:#898781}
+.ring{stroke:#fcfcfb;stroke-width:2}
+.hollow{fill:#fcfcfb;stroke-width:2}
+.glyph{fill:#52514e;stroke:#52514e}
+.glyphStroke{stroke:#52514e}
+.a1{fill:#2a78d6;fill-opacity:0.12}
+.a2{fill:#eb6834;fill-opacity:0.12}
+.ab{fill:#898781;fill-opacity:0.14}
+.connector{stroke:#898781;stroke-width:2}
+.leader{stroke:#898781;stroke-width:1}
+.ref{stroke:#52514e;stroke-width:1.5}
+.highlight{fill:none;stroke:#0b0b0b;stroke-width:1.5}
+@media (prefers-color-scheme:dark){
+.bg{fill:#1a1a19;stroke:rgba(255,255,255,0.10)}
+.title,.ink{fill:#ffffff}
+.sub,.ink2{fill:#c3c2b7}
+.grid{stroke:#2c2c2a}
+.axis{stroke:#383835}
+.c1{stroke:#3987e5}.d1{fill:#3987e5}
+.c2{stroke:#d95926}.d2{fill:#d95926}
+.ring{stroke:#1a1a19}
+.hollow{fill:#1a1a19}
+.glyph{fill:#c3c2b7;stroke:#c3c2b7}
+.glyphStroke{stroke:#c3c2b7}
+.a1{fill:#3987e5;fill-opacity:0.16}
+.a2{fill:#d95926;fill-opacity:0.16}
+.ref{stroke:#c3c2b7}
+.highlight{stroke:#ffffff}
+}
+</style>
+<rect x="0.5" y="0.5" width="719.0" height="367.0" rx="8" class="bg"/>
+<text x="24.0" y="30.0" class="title" text-anchor="start">Every parameter set, 2020–2024 (out of sample)</text>
+<text x="24.0" y="50.0" class="sub" text-anchor="start">One dot per parameter set. Ringed: the set chosen on 2014–2019.</text>
+<circle cx="29.0" cy="72.0" r="5.0" class="d1"/>
+<text x="40.0" y="76.0" class="ink2" text-anchor="start">Mean reversion (32 sets)</text>
+<circle cx="236.0" cy="72.0" r="5.0" class="d2"/>
+<text x="247.0" y="76.0" class="ink2" text-anchor="start">MA crossover (8 sets)</text>
+<line x1="190.0" y1="124.0" x2="190.0" y2="308.0" class="grid"/>
+<text x="190.0" y="326.0" class="tick" text-anchor="middle">0.00</text>
+<line x1="286.4" y1="124.0" x2="286.4" y2="308.0" class="grid"/>
+<text x="286.4" y="326.0" class="tick" text-anchor="middle">0.10</text>
+<line x1="382.8" y1="124.0" x2="382.8" y2="308.0" class="grid"/>
+<text x="382.8" y="326.0" class="tick" text-anchor="middle">0.20</text>
+<line x1="479.2" y1="124.0" x2="479.2" y2="308.0" class="grid"/>
+<text x="479.2" y="326.0" class="tick" text-anchor="middle">0.30</text>
+<line x1="575.6" y1="124.0" x2="575.6" y2="308.0" class="grid"/>
+<text x="575.6" y="326.0" class="tick" text-anchor="middle">0.40</text>
+<line x1="672.0" y1="124.0" x2="672.0" y2="308.0" class="grid"/>
+<text x="672.0" y="326.0" class="tick" text-anchor="middle">0.50</text>
+<line x1="190.0" y1="308.0" x2="672.0" y2="308.0" class="axis"/>
+<text x="431.0" y="348.0" class="tick" text-anchor="middle">Average Sharpe ratio across 29 symbols, 2020–2024</text>
+<line x1="604.5" y1="118.0" x2="604.5" y2="308.0" class="ref"/>
+<text x="604.5" y="112.0" class="ink2" text-anchor="middle">Buy-and-hold 0.43</text>
+<text x="174.0" y="174.0" class="ink" text-anchor="end">Mean reversion (32 sets)</text>
+<circle cx="196.4" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="229.5" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="241.0" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="254.7" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="254.7" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="267.9" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="272.7" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="287.8" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="292.3" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="351.3" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="374.9" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="377.2" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="384.0" cy="181.0" r="5.0" class="ring d1"/>
+<circle cx="388.4" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="389.4" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="392.5" cy="148.0" r="5.0" class="ring d1"/>
+<circle cx="398.1" cy="181.0" r="5.0" class="ring d1"/>
+<circle cx="403.6" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="412.9" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="416.8" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="422.4" cy="181.0" r="5.0" class="ring d1"/>
+<circle cx="430.4" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="432.1" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="441.5" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="447.9" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="450.0" cy="181.0" r="5.0" class="ring d1"/>
+<circle cx="463.9" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="465.7" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="466.9" cy="181.0" r="5.0" class="ring d1"/>
+<circle cx="478.7" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="523.7" cy="170.0" r="5.0" class="ring d1"/>
+<circle cx="532.1" cy="159.0" r="5.0" class="ring d1"/>
+<circle cx="398.1" cy="181.0" r="9.0" class="highlight"/>
+<text x="398.1" y="212.0" class="ink2" text-anchor="middle">chosen</text>
+<text x="174.0" y="266.0" class="ink" text-anchor="end">MA crossover (8 sets)</text>
+<circle cx="319.8" cy="262.0" r="5.0" class="ring d2"/>
+<circle cx="320.7" cy="251.0" r="5.0" class="ring d2"/>
+<circle cx="333.9" cy="262.0" r="5.0" class="ring d2"/>
+<circle cx="369.3" cy="262.0" r="5.0" class="ring d2"/>
+<circle cx="374.1" cy="251.0" r="5.0" class="ring d2"/>
+<circle cx="381.5" cy="262.0" r="5.0" class="ring d2"/>
+<circle cx="392.4" cy="251.0" r="5.0" class="ring d2"/>
+<circle cx="405.9" cy="262.0" r="5.0" class="ring d2"/>
+<circle cx="381.5" cy="262.0" r="9.0" class="highlight"/>
+<text x="381.5" y="304.0" class="ink2" text-anchor="middle">chosen</text>
+</svg>

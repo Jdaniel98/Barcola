@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720.0" height="404.0" viewBox="0 0 720.0 404.0" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Walk-forward: average Sharpe ratio in each test year</title>
+<desc id="chart-desc">Parameters re-chosen every year on the 3 years before it. Average of 29 symbols.</desc>
+<style>
+text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.bg{fill:#fcfcfb;stroke:rgba(11,11,11,0.10)}
+.title{fill:#0b0b0b;font-size:16px;font-weight:600}
+.sub{fill:#52514e;font-size:13px}
+.ink{fill:#0b0b0b;font-size:12px}
+.ink2{fill:#52514e;font-size:12px}
+.tick{fill:#898781;font-size:12px;font-variant-numeric:tabular-nums}
+.grid{stroke:#e1e0d9;stroke-width:1}
+.axis{stroke:#c3c2b7;stroke-width:1}
+.line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.c1{stroke:#2a78d6}.d1{fill:#2a78d6}
+.c2{stroke:#eb6834}.d2{fill:#eb6834}
+.cb{stroke:#898781}.db{fill:#898781}
+.ring{stroke:#fcfcfb;stroke-width:2}
+.hollow{fill:#fcfcfb;stroke-width:2}
+.glyph{fill:#52514e;stroke:#52514e}
+.glyphStroke{stroke:#52514e}
+.a1{fill:#2a78d6;fill-opacity:0.12}
+.a2{fill:#eb6834;fill-opacity:0.12}
+.ab{fill:#898781;fill-opacity:0.14}
+.connector{stroke:#898781;stroke-width:2}
+.leader{stroke:#898781;stroke-width:1}
+.ref{stroke:#52514e;stroke-width:1.5}
+.highlight{fill:none;stroke:#0b0b0b;stroke-width:1.5}
+@media (prefers-color-scheme:dark){
+.bg{fill:#1a1a19;stroke:rgba(255,255,255,0.10)}
+.title,.ink{fill:#ffffff}
+.sub,.ink2{fill:#c3c2b7}
+.grid{stroke:#2c2c2a}
+.axis{stroke:#383835}
+.c1{stroke:#3987e5}.d1{fill:#3987e5}
+.c2{stroke:#d95926}.d2{fill:#d95926}
+.ring{stroke:#1a1a19}
+.hollow{fill:#1a1a19}
+.glyph{fill:#c3c2b7;stroke:#c3c2b7}
+.glyphStroke{stroke:#c3c2b7}
+.a1{fill:#3987e5;fill-opacity:0.16}
+.a2{fill:#d95926;fill-opacity:0.16}
+.ref{stroke:#c3c2b7}
+.highlight{stroke:#ffffff}
+}
+</style>
+<rect x="0.5" y="0.5" width="719.0" height="403.0" rx="8" class="bg"/>
+<text x="24.0" y="30.0" class="title" text-anchor="start">Walk-forward: average Sharpe ratio in each test year</text>
+<text x="24.0" y="50.0" class="sub" text-anchor="start">Parameters re-chosen every year on the 3 years before it. Average of 29 symbols.</text>
+<line x1="24.0" y1="72.0" x2="40.0" y2="72.0" class="line c1"/>
+<text x="46.0" y="76.0" class="ink2" text-anchor="start">Mean reversion</text>
+<line x1="167.4" y1="72.0" x2="183.4" y2="72.0" class="line c2"/>
+<text x="189.4" y="76.0" class="ink2" text-anchor="start">MA crossover</text>
+<line x1="297.0" y1="72.0" x2="313.0" y2="72.0" class="line cb"/>
+<text x="319.0" y="76.0" class="ink2" text-anchor="start">Buy-and-hold</text>
+<line x1="72.0" y1="364.0" x2="624.0" y2="364.0" class="grid"/>
+<text x="64.0" y="368.0" class="tick" text-anchor="end">−0.50</text>
+<line x1="72.0" y1="299.0" x2="624.0" y2="299.0" class="grid"/>
+<text x="64.0" y="303.0" class="tick" text-anchor="end">0.00</text>
+<line x1="72.0" y1="234.0" x2="624.0" y2="234.0" class="grid"/>
+<text x="64.0" y="238.0" class="tick" text-anchor="end">0.50</text>
+<line x1="72.0" y1="169.0" x2="624.0" y2="169.0" class="grid"/>
+<text x="64.0" y="173.0" class="tick" text-anchor="end">1.00</text>
+<line x1="72.0" y1="104.0" x2="624.0" y2="104.0" class="grid"/>
+<text x="64.0" y="108.0" class="tick" text-anchor="end">1.50</text>
+<line x1="72.0" y1="364.0" x2="624.0" y2="364.0" class="axis"/>
+<text x="72.0" y="382.0" class="tick" text-anchor="middle">2016</text>
+<text x="141.0" y="382.0" class="tick" text-anchor="middle">2017</text>
+<text x="210.0" y="382.0" class="tick" text-anchor="middle">2018</text>
+<text x="279.0" y="382.0" class="tick" text-anchor="middle">2019</text>
+<text x="348.0" y="382.0" class="tick" text-anchor="middle">2020</text>
+<text x="417.0" y="382.0" class="tick" text-anchor="middle">2021</text>
+<text x="486.0" y="382.0" class="tick" text-anchor="middle">2022</text>
+<text x="555.0" y="382.0" class="tick" text-anchor="middle">2023</text>
+<text x="624.0" y="382.0" class="tick" text-anchor="middle">2024</text>
+<polyline class="line cb" points="72.0,187.5 141.0,126.4 210.0,299.6 279.0,137.7 348.0,257.3 417.0,170.4 486.0,296.0 555.0,235.4 624.0,196.4"/>
+<polyline class="line c1" points="72.0,222.2 141.0,192.9 210.0,238.1 279.0,207.1 348.0,281.4 417.0,199.6 486.0,236.5 555.0,216.0 624.0,258.4"/>
+<polyline class="line c2" points="72.0,235.6 141.0,164.7 210.0,323.0 279.0,235.2 348.0,346.2 417.0,227.5 486.0,357.5 555.0,315.5 624.0,228.4"/>
+<circle cx="72.0" cy="187.5" r="4.0" class="ring db"/>
+<circle cx="141.0" cy="126.4" r="4.0" class="ring db"/>
+<circle cx="210.0" cy="299.6" r="4.0" class="ring db"/>
+<circle cx="279.0" cy="137.7" r="4.0" class="ring db"/>
+<circle cx="348.0" cy="257.3" r="4.0" class="ring db"/>
+<circle cx="417.0" cy="170.4" r="4.0" class="ring db"/>
+<circle cx="486.0" cy="296.0" r="4.0" class="ring db"/>
+<circle cx="555.0" cy="235.4" r="4.0" class="ring db"/>
+<circle cx="72.0" cy="222.2" r="4.0" class="ring d1"/>
+<circle cx="141.0" cy="192.9" r="4.0" class="ring d1"/>
+<circle cx="210.0" cy="238.1" r="4.0" class="ring d1"/>
+<circle cx="279.0" cy="207.1" r="4.0" class="ring d1"/>
+<circle cx="348.0" cy="281.4" r="4.0" class="ring d1"/>
+<circle cx="417.0" cy="199.6" r="4.0" class="ring d1"/>
+<circle cx="486.0" cy="236.5" r="4.0" class="ring d1"/>
+<circle cx="555.0" cy="216.0" r="4.0" class="ring d1"/>
+<circle cx="72.0" cy="235.6" r="4.0" class="ring d2"/>
+<circle cx="141.0" cy="164.7" r="4.0" class="ring d2"/>
+<circle cx="210.0" cy="323.0" r="4.0" class="ring d2"/>
+<circle cx="279.0" cy="235.2" r="4.0" class="ring d2"/>
+<circle cx="348.0" cy="346.2" r="4.0" class="ring d2"/>
+<circle cx="417.0" cy="227.5" r="4.0" class="ring d2"/>
+<circle cx="486.0" cy="357.5" r="4.0" class="ring d2"/>
+<circle cx="555.0" cy="315.5" r="4.0" class="ring d2"/>
+<circle cx="624.0" cy="196.4" r="4.0" class="ring db"/>
+<circle cx="624.0" cy="258.4" r="4.0" class="ring d1"/>
+<circle cx="624.0" cy="228.4" r="4.0" class="ring d2"/>
+<text x="638.0" y="200.4" class="ink" text-anchor="start">0.79</text>
+<text x="638.0" y="232.4" class="ink" text-anchor="start">0.54</text>
+<text x="638.0" y="262.4" class="ink" text-anchor="start">0.31</text>
+</svg>
