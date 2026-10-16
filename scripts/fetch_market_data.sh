@@ -12,7 +12,7 @@
 # the raw prices by Adj Close / Close, so splits and dividends are accounted for.
 set -euo pipefail
 
-START_DATE="2013-09-01"  # a few months of warm-up history before the study starts in 2014
+START_DATE="2012-01-01"  # two years of history before 2014, enough to form 200-day averages
 END_DATE="2024-12-31"
 API="https://api.tiingo.com"
 

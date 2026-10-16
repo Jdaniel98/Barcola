@@ -1,5 +1,6 @@
 add_library(barcola_strategies STATIC
     buy_and_hold_strategy.cpp
+    ma_crossover_strategy.cpp
     mean_reversion_strategy.cpp
 )
 

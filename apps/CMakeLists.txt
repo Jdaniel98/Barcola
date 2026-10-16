@@ -1,2 +1,2 @@
-add_executable(mean_reversion_study mean_reversion_study.cpp)
-target_link_libraries(mean_reversion_study PRIVATE barcola_strategies)
+add_executable(strategy_study strategy_study.cpp)
+target_link_libraries(strategy_study PRIVATE barcola_strategies)
