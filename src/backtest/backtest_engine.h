@@ -23,6 +23,9 @@ struct BacktestConfig {
     // that sits in cash scores zero instead of being penalised for not trading.
     double riskFreeRate = DEFAULT_RISK_FREE_RATE;
     FillTiming fillTiming = FillTiming::NEXT_OPEN;
+    // Leading bars used only as history. The strategy can look back into them, but trading,
+    // the equity curve and every metric start at bar warmupBars.
+    size_t warmupBars = 0;
 };
 
 struct BacktestResult {
@@ -38,6 +41,7 @@ struct BacktestResult {
     double profitFactor = 0.0;
     size_t totalTrades = 0;
     double avgHoldDays = 0.0;
+    double exposure = 0.0;  // fraction of evaluated bars that closed with a position open
 };
 
 class BacktestEngine {
@@ -46,6 +50,7 @@ public:
     explicit BacktestEngine(BacktestConfig config);
 
     // Long-only, one position at a time. Calls strategy.reset() before the first bar.
+    // Throws std::invalid_argument if data is empty or warmupBars leaves no bar to trade.
     [[nodiscard]] BacktestResult run(Strategy& strategy, const PriceHistory& data) const;
 
 private:

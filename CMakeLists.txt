@@ -11,6 +11,11 @@ find_package(CURL REQUIRED)
 add_subdirectory(src)
 add_subdirectory(strategies)
 
+option(BARCOLA_BUILD_APPS "Build the study programs in apps/" ON)
+if(BARCOLA_BUILD_APPS)
+    add_subdirectory(apps)
+endif()
+
 option(BARCOLA_BUILD_TESTS "Build tests" ON)
 if(BARCOLA_BUILD_TESTS)
     enable_testing()

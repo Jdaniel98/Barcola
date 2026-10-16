@@ -46,11 +46,18 @@ BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data)
     if (points.empty()) {
         throw std::invalid_argument("Cannot backtest on empty price data");
     }
+    const size_t firstBar = config_.warmupBars;
+    if (firstBar >= points.size()) {
+        throw std::invalid_argument("warmupBars (" + std::to_string(firstBar) +
+                                    ") leaves no bars to trade out of " +
+                                    std::to_string(points.size()));
+    }
 
     strategy.reset();
 
     BacktestResult result;
-    result.equityCurve.reserve(points.size());
+    result.equityCurve.reserve(points.size() - firstBar);
+    size_t barsInMarket = 0;
 
     const double dailyCashRate = config_.riskFreeRate / TRADING_DAYS_PER_YEAR;
     double cash = config_.initialCapital;
@@ -98,10 +105,10 @@ BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data)
         }
     };
 
-    for (size_t i = 0; i < points.size(); ++i) {
+    for (size_t i = firstBar; i < points.size(); ++i) {
         const PricePoint& bar = points[i];
 
-        if (i > 0) {
+        if (i > firstBar) {
             cash *= 1.0 + dailyCashRate;
         }
 
@@ -120,6 +127,9 @@ BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data)
         }
 
         result.equityCurve.push_back(cash + holding.shares * bar.getClosing());
+        if (holding.isLong()) {
+            ++barsInMarket;
+        }
     }
 
     // Close any open position at the last close. An order still pending from the last bar has
@@ -129,7 +139,9 @@ BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data)
         result.equityCurve.back() = cash;
     }
 
-    const size_t periods = points.size() - 1;
+    const size_t periods = result.equityCurve.size() - 1;
+    result.exposure = static_cast<double>(barsInMarket) /
+                      static_cast<double>(result.equityCurve.size());
     result.totalReturn = result.equityCurve.back() / config_.initialCapital - 1.0;
     result.annualizedReturn = annualizeReturn(result.totalReturn, periods);
     result.sharpeRatio = calculateSharpeRatio(result.equityCurve, config_.riskFreeRate);
