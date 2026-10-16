@@ -37,6 +37,11 @@ double calculateSharpeRatio(const std::vector<double>& equityCurve,
         dailyReturns.push_back(equityCurve[i] / equityCurve[i - 1] - 1.0);
     }
 
+    return calculateSharpeRatioFromReturns(dailyReturns, riskFreeRate);
+}
+
+double calculateSharpeRatioFromReturns(const std::vector<double>& dailyReturns,
+                                       double riskFreeRate) {
     if (dailyReturns.empty()) {
         return 0.0;
     }

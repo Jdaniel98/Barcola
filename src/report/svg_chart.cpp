@@ -357,6 +357,16 @@ std::string renderLineChart(const LineChart& chart) {
         out << "\"/>\n";
     }
 
+    // Short series (e.g. one point per year) get a dot on every point so each value is visible
+    constexpr size_t MAX_POINTS_WITH_DOTS = 40;
+    if (n <= MAX_POINTS_WITH_DOTS) {
+        for (const LineSeries* s : order) {
+            for (size_t i = 0; i + 1 < n; ++i) {
+                out << circle(x(i), y(s->values[i]), DOT_RADIUS - 1, "ring d" + colorKey(s->color));
+            }
+        }
+    }
+
     // End dots and value labels; labels that would collide are moved apart and get a leader
     struct EndLabel {
         double dotY;
