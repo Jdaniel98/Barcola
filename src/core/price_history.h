@@ -20,6 +20,8 @@ public:
     [[nodiscard]] PricePoint getDataPoint(const std::string& date) const;
     [[nodiscard]] const std::vector<PricePoint>& getDataPoints() const;
     [[nodiscard]] std::vector<double> getClosingPrices() const;
+    // Bars dated from `from` to `to`, both inclusive, under the same symbol.
+    [[nodiscard]] PriceHistory between(time_t from, time_t to) const;
     [[nodiscard]] const std::string& getAssetSymbol() const;
     void printDataPoints() const;
     void clearDataPoints();

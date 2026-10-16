@@ -219,6 +219,18 @@ std::vector<double> PriceHistory::getClosingPrices() const {
     return closes;
 }
 
+PriceHistory PriceHistory::between(time_t from, time_t to) const {
+    PriceHistory slice(assetSymbol_);
+    const auto byDate = [](const PricePoint& point, time_t value) {
+        return point.getDate() < value;
+    };
+    const auto first = std::lower_bound(dataPoints_.begin(), dataPoints_.end(), from, byDate);
+    for (auto it = first; it != dataPoints_.end() && it->getDate() <= to; ++it) {
+        slice.dataPoints_.push_back(*it);
+    }
+    return slice;
+}
+
 const std::string& PriceHistory::getAssetSymbol() const {
     return assetSymbol_;
 }

@@ -373,3 +373,58 @@ TEST(BacktestEngineTest, MetricsArePopulated) {
     EXPECT_GE(result.maxDrawdown, 0.0);
     EXPECT_LE(result.maxDrawdown, 1.0);
 }
+
+TEST(BacktestEngineTest, Exposure_FractionOfBarsHeld) {
+    // AlwaysBuy is flat on bar 0 and long from bar 1 to the end: 15 of 16 bars
+    PriceHistory data("TEST");
+    data.loadFromCsv(dataDir() + "/monotonic_up.csv");
+
+    BacktestEngine engine(frictionlessConfig());
+    AlwaysBuyStrategy strategy;
+    const BacktestResult result = engine.run(strategy, data);
+
+    EXPECT_DOUBLE_EQ(result.exposure, 15.0 / 16.0);
+}
+
+TEST(BacktestEngineTest, Exposure_ZeroWithoutTrades) {
+    PriceHistory data("TEST");
+    data.loadFromCsv(dataDir() + "/monotonic_up.csv");
+
+    BacktestEngine engine(frictionlessConfig());
+    AlwaysHoldStrategy strategy;
+    EXPECT_DOUBLE_EQ(engine.run(strategy, data).exposure, 0.0);
+}
+
+TEST(BacktestEngineTest, Warmup_StrategySeesHistoryButTradingStartsLater) {
+    PriceHistory data("TEST");
+    data.loadFromCsv(dataDir() + "/monotonic_up.csv");
+
+    BacktestConfig config = frictionlessConfig();
+    config.warmupBars = 3;
+    BacktestEngine engine(config);
+    AlwaysBuyStrategy strategy;
+    const BacktestResult result = engine.run(strategy, data);
+
+    // First evaluation is on bar 3 with bars 0-3 visible
+    ASSERT_FALSE(strategy.barsSeen.empty());
+    EXPECT_EQ(strategy.barsSeen.front(), 4u);
+    EXPECT_EQ(strategy.barsSeen.size(), 13u);
+    EXPECT_EQ(result.equityCurve.size(), 13u);
+    EXPECT_DOUBLE_EQ(result.equityCurve.front(), 100000.0);
+
+    // BUY on bar 3 fills at bar 4's open (14)
+    ASSERT_EQ(result.totalTrades, 1u);
+    EXPECT_DOUBLE_EQ(result.trades[0].entryPrice, 14.0);
+    EXPECT_EQ(result.trades[0].entryDate, "2023-01-09");
+}
+
+TEST(BacktestEngineTest, Warmup_LeavingNoBars_Throws) {
+    PriceHistory data("TEST");
+    data.loadFromCsv(dataDir() + "/monotonic_up.csv");
+
+    BacktestConfig config = frictionlessConfig();
+    config.warmupBars = data.dataPointsCount();
+    BacktestEngine engine(config);
+    AlwaysHoldStrategy strategy;
+    EXPECT_THROW((void)engine.run(strategy, data), std::invalid_argument);
+}
