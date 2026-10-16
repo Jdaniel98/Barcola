@@ -41,3 +41,10 @@ compile_commands.json
 .vscode/
 .idea/
 *.swp
+
+# Market data from Tiingo: not redistributable, fetch with scripts/fetch_market_data.sh
+data/market/
+
+# Study outputs that contain prices; regenerate with build/apps/mean_reversion_study
+results/trades.csv
+results/equity_out_of_sample.csv
