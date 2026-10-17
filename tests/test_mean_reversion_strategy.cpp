@@ -130,3 +130,90 @@ TEST(MeanReversionStrategyTest, InvalidParameters_Throw) {
     EXPECT_THROW(MeanReversionStrategy(5, 0.0, 0.0), std::invalid_argument);
     EXPECT_THROW(MeanReversionStrategy(5, -1.0, 0.0), std::invalid_argument);
 }
+
+// --- Options: trend filter and time stop ---
+
+TEST(MeanReversionStrategyTest, TrendFilter_BlocksDipInDowntrend) {
+    // Steady fall from 100 to 71, then a sharp drop to 60: a dip, but below the 20-bar trend
+    std::vector<double> closes;
+    for (int i = 0; i < 30; ++i) closes.push_back(100.0 - i);
+    closes.push_back(60.0);
+    auto prices = makePrices(closes);
+    const BarView bars(prices, prices.size());
+
+    MeanReversionStrategy unfiltered(5, 1.5, 0.0);
+    MeanReversionStrategy filtered(5, 1.5, 0.0, {20, 0});
+    EXPECT_EQ(unfiltered.evaluate(bars, Position::FLAT), Signal::BUY);
+    EXPECT_EQ(filtered.evaluate(bars, Position::FLAT), Signal::HOLD);
+}
+
+TEST(MeanReversionStrategyTest, TrendFilter_AllowsDipInUptrend) {
+    // Steady rise from 100 to 129, then a drop to 124: still above the 20-bar trend
+    std::vector<double> closes;
+    for (int i = 0; i < 30; ++i) closes.push_back(100.0 + i);
+    closes.push_back(124.0);
+    auto prices = makePrices(closes);
+
+    MeanReversionStrategy filtered(5, 1.5, 0.0, {20, 0});
+    EXPECT_EQ(filtered.evaluate(BarView(prices, prices.size()), Position::FLAT), Signal::BUY);
+}
+
+TEST(MeanReversionStrategyTest, TrendFilter_WaitsForFullTrendWindow) {
+    // Same dip as SharpDrop_TriggersBuy, but too few bars to compute a 20-bar trend
+    auto prices = makePrices({100, 100, 100, 100, 100, 90});
+    MeanReversionStrategy filtered(5, 1.5, 0.0, {20, 0});
+    EXPECT_EQ(filtered.evaluate(BarView(prices, prices.size()), Position::FLAT), Signal::HOLD);
+}
+
+// Ten bars at 100, a drop to 85 (BUY on bar 10), then the price stays at 84 and never
+// reverts, so only a time stop can sell
+static std::vector<double> dropWithoutReversion() {
+    std::vector<double> closes(10, 100.0);
+    closes.push_back(85.0);
+    for (int i = 0; i < 5; ++i) closes.push_back(84.0);
+    return closes;
+}
+
+TEST(MeanReversionStrategyTest, TimeStop_SellsAfterMaxHoldingBars) {
+    auto prices = makePrices(dropWithoutReversion());
+    MeanReversionStrategy strategy(5, 1.5, 0.0, {0, 3});
+    const auto signals = walk(strategy, prices);
+
+    // BUY on bar 10; long from bar 11; three bars later (bar 14) the time stop sells
+    ASSERT_EQ(signals[10], Signal::BUY);
+    for (size_t i = 11; i < 14; ++i) {
+        EXPECT_EQ(signals[i], Signal::HOLD) << "bar " << i;
+    }
+    EXPECT_EQ(signals[14], Signal::SELL);
+}
+
+TEST(MeanReversionStrategyTest, NoTimeStop_HoldsWhilePriceStaysLow) {
+    auto prices = makePrices(dropWithoutReversion());
+    MeanReversionStrategy strategy(5, 1.5, 0.0);
+    for (Signal signal : walk(strategy, prices)) {
+        EXPECT_NE(signal, Signal::SELL);
+    }
+}
+
+TEST(MeanReversionStrategyTest, TimeStop_ResetStartsTheClockAgain) {
+    auto prices = makePrices(dropWithoutReversion());
+    MeanReversionStrategy strategy(5, 1.5, 0.0, {0, 3});
+    // Long from bar 11: by bar 14 the position is three bars old
+    for (size_t i = 11; i <= 13; ++i) {
+        (void)strategy.evaluate(BarView(prices, i + 1), Position::LONG);
+    }
+    strategy.reset();
+    // After a reset, bar 14 is the first bar seen long, so no time stop yet
+    EXPECT_EQ(strategy.evaluate(BarView(prices, 15), Position::LONG), Signal::HOLD);
+}
+
+TEST(MeanReversionStrategyTest, Options_InName) {
+    EXPECT_EQ(MeanReversionStrategy(20, 2.0, 0.5, {200, 21}).name(),
+              "MeanReversion(lookback=20, entryZ=2, exitZ=0.5, trend=200, maxHold=21)");
+    EXPECT_EQ(MeanReversionStrategy(20, 2.0, 0.5).name(),
+              "MeanReversion(lookback=20, entryZ=2, exitZ=0.5)");
+}
+
+TEST(MeanReversionStrategyTest, TrendWindowOfOne_Throws) {
+    EXPECT_THROW(MeanReversionStrategy(5, 1.5, 0.0, {1, 0}), std::invalid_argument);
+}

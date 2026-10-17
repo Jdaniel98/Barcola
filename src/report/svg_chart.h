@@ -12,8 +12,9 @@ namespace barcola {
 // an image on GitHub.
 
 // Which color a series gets. Colors follow the entity: a strategy keeps its color in every
-// chart. Benchmark is a neutral gray for context series.
-enum class SeriesColor { First, Second, Benchmark };
+// chart. Benchmark is a neutral gray for context series. Third and Fourth sit below 3:1
+// contrast on the light background, so charts using them must label every series.
+enum class SeriesColor { First, Second, Third, Fourth, Benchmark };
 
 enum class ValueFormat {
     Decimal,   // 0.67
