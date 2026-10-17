@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "core/price_history.h"
 #include "core/time_utils.h"
 

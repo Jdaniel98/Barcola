@@ -77,9 +77,7 @@ Signal MeanReversionStrategy::evaluate(const BarView& bars, Position position) {
 
 std::string MeanReversionStrategy::name() const {
     std::ostringstream oss;
-    oss << "MeanReversion(lookback=" << lookback_
-        << ", entryZ=" << entryZ_
-        << ", exitZ=" << exitZ_;
+    oss << "MeanReversion(lookback=" << lookback_ << ", entryZ=" << entryZ_ << ", exitZ=" << exitZ_;
     if (options_.trendWindow > 0) {
         oss << ", trend=" << options_.trendWindow;
     }

@@ -5,9 +5,16 @@ on:
   pull_request:
     branches: [main]
 
+# A newer push to the same branch makes the older run pointless
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
+    name: Build and test (${{ matrix.os }})
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -19,10 +26,113 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBARCOLA_WARNINGS_AS_ERRORS=ON
 
       - name: Build
         run: cmake --build build --parallel
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  sanitizers:
+    name: Test under AddressSanitizer and UBSan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+
+      - name: Configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBARCOLA_SANITIZE=ON
+          -DBARCOLA_WARNINGS_AS_ERRORS=ON -DBARCOLA_BUILD_APPS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:strict_string_checks=1
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: ctest --test-dir build --output-on-failure
+
+  coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+          pip install gcovr==8.5
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBARCOLA_COVERAGE=ON -DBARCOLA_BUILD_APPS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Coverage report
+        run: >
+          mkdir -p coverage &&
+          gcovr --root . --filter src/ --filter strategies/ --object-directory build
+          --merge-mode-functions=separate --exclude-throw-branches --exclude-unreachable-branches
+          --txt-summary --markdown-summary coverage/summary.md
+          --html-details coverage/index.html --fail-under-line 85
+
+      - name: Add the summary to the job page
+        if: always()
+        run: cat coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+  format:
+    name: Formatting (clang-format)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install clang-format
+        run: pip install clang-format==18.1.8
+
+      - name: Check formatting
+        run: scripts/check_format.sh
+
+  lint:
+    name: Lint (clang-tidy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+          pip install clang-tidy==18.1.8
+
+      # Configuring is enough: it writes compile_commands.json and fetches GoogleTest
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Run clang-tidy
+        run: scripts/run_clang_tidy.sh build

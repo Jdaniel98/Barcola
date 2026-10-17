@@ -21,8 +21,7 @@ double annualizeReturn(double totalReturn, size_t periods) {
     return std::pow(1.0 + totalReturn, 1.0 / years) - 1.0;
 }
 
-double calculateSharpeRatio(const std::vector<double>& equityCurve,
-                            double riskFreeRate) {
+double calculateSharpeRatio(const std::vector<double>& equityCurve, double riskFreeRate) {
     if (equityCurve.size() < 2) {
         return 0.0;
     }
@@ -57,15 +56,13 @@ double calculateSharpeRatioFromReturns(const std::vector<double>& dailyReturns,
 
     // Std dev of daily returns
     double sumSqDiff = 0.0;
-    const double meanReturn = std::accumulate(dailyReturns.begin(),
-                                              dailyReturns.end(), 0.0) /
+    const double meanReturn = std::accumulate(dailyReturns.begin(), dailyReturns.end(), 0.0) /
                               static_cast<double>(dailyReturns.size());
     for (double r : dailyReturns) {
         const double diff = r - meanReturn;
         sumSqDiff += diff * diff;
     }
-    const double stdDev = std::sqrt(sumSqDiff /
-                                    static_cast<double>(dailyReturns.size()));
+    const double stdDev = std::sqrt(sumSqDiff / static_cast<double>(dailyReturns.size()));
 
     if (stdDev < 1e-12) {
         return 0.0;
@@ -95,8 +92,7 @@ double calculateMaxDrawdown(const std::vector<double>& equityCurve) {
     return maxDD;
 }
 
-double calculateSortinoRatio(const std::vector<double>& equityCurve,
-                             double riskFreeRate) {
+double calculateSortinoRatio(const std::vector<double>& equityCurve, double riskFreeRate) {
     if (equityCurve.size() < 2) {
         return 0.0;
     }
@@ -130,8 +126,7 @@ double calculateSortinoRatio(const std::vector<double>& equityCurve,
             sumDownsideSq += diff * diff;
         }
     }
-    const double downsideDev = std::sqrt(sumDownsideSq /
-                                         static_cast<double>(dailyReturns.size()));
+    const double downsideDev = std::sqrt(sumDownsideSq / static_cast<double>(dailyReturns.size()));
 
     if (downsideDev < 1e-12) {
         return 0.0;
@@ -189,8 +184,8 @@ TradeStatistics analyzeTradeHistory(const std::vector<Trade>& trades) {
         }
     }
 
-    stats.winRate = static_cast<double>(stats.winningTrades) /
-                    static_cast<double>(stats.totalTrades);
+    stats.winRate =
+        static_cast<double>(stats.winningTrades) / static_cast<double>(stats.totalTrades);
 
     if (stats.winningTrades > 0) {
         stats.avgWin = totalWin / static_cast<double>(stats.winningTrades);

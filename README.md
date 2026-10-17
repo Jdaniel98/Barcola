@@ -1,5 +1,7 @@
 # Barcola
 
+[![CI](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml)
+
 A quantitative trading toolkit written from scratch in C++17, used to answer one question: **do two classic trading strategies, buying sharp dips and following trends, beat simply holding the stock?**
 
 **No.** On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs, buying dips fell well short of holding and following trends came close. A robustness study then checked those results against chance, against re-choosing parameters every year, and on 29 Dow stocks picked without hindsight. It confirmed that buying dips loses. Trend following's near-tie turned out to depend on the six hand-picked stocks: on the Dow, and in every year of the walk-forward test, it trailed holding as well. Finally, a pre-registered test on 21 months of data no study had seen (2025–2026) agreed: every strategy trailed holding, and neither proposed fix for buying dips helped reliably.
@@ -86,6 +88,23 @@ Each run prints every table in the write-ups and redraws the charts in its `char
 
 **Requirements:** a C++17 compiler, CMake 3.16+ and libcurl. The download script needs curl and python3.
 
+### Running the CI checks locally
+
+```bash
+pip install clang-format==18.1.8 clang-tidy==18.1.8 gcovr==8.5
+scripts/check_format.sh                    # --fix reformats in place
+scripts/run_clang_tidy.sh build            # needs a configured build directory
+
+cmake -B build-asan -DCMAKE_BUILD_TYPE=Debug -DBARCOLA_SANITIZE=ON
+cmake --build build-asan --parallel && ctest --test-dir build-asan
+
+cmake -B build-cov -DCMAKE_BUILD_TYPE=Debug -DBARCOLA_COVERAGE=ON
+cmake --build build-cov --parallel && ctest --test-dir build-cov
+gcovr --filter src/ --filter strategies/ --object-directory build-cov --merge-mode-functions=separate
+```
+
+`-DBARCOLA_WARNINGS_AS_ERRORS=ON` makes any compiler warning fail the build, as in CI. With Apple clang, add `--gcov-executable "xcrun llvm-cov gcov"` to the `gcovr` command.
+
 ## The toolkit
 
 | Module | What it does |
@@ -163,6 +182,7 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 ## Engineering
 
 - **220 tests in 21 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
+- **Strict checks on every push.** Any compiler warning fails the build (`-Wall -Wextra -Wpedantic -Wshadow -Wconversion`). CI also runs the tests under AddressSanitizer and UndefinedBehaviorSanitizer, checks formatting (clang-format) and lint (a focused clang-tidy set), and measures coverage: the tests run 91% of the lines in the library and strategies.
 - **Known-value tests for the math.** RSI, correlation, volatility, drawdown, annualized return, Bollinger Bands and the backtest's fills and sizing are checked against hand-calculated or independently computed values.
 - **Built to avoid backtest traps.** Strategies cannot see future bars, fills happen the next day, costs apply to every trade, and the engine, not the strategy, is the record of what is held.
 - **Reproducible.** Same data, same results, byte for byte. The Monte Carlo simulation uses a fixed seed and a standard-defined generator.
@@ -176,3 +196,8 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 - [x] **Phase 5:** Charts and a results-first README
 - [x] **Phase 6:** Robustness: bootstrap intervals, walk-forward, cost sensitivity, 29 Dow stocks ([write-up](docs/phase-6-robustness.md))
 - [x] **Phase 7:** Pre-registered test on fresh 2025–2026 data ([pre-registration](docs/phase-7-preregistration.md), [results](docs/phase-7-results.md))
+- [x] **Phase 8:** Release polish: MIT license, stricter CI (warnings as errors, sanitizers, formatting, lint, coverage), v1.0
+
+## License
+
+The code is released under the [MIT License](LICENSE). The market data it downloads is not part of the repository and stays under Tiingo's terms.

@@ -6,8 +6,7 @@
 
 namespace barcola {
 
-std::vector<size_t> blockBootstrapIndices(size_t n, size_t blockLength,
-                                          std::mt19937& generator) {
+std::vector<size_t> blockBootstrapIndices(size_t n, size_t blockLength, std::mt19937& generator) {
     if (blockLength == 0 || blockLength > n) {
         throw std::invalid_argument("Block length must be between 1 and the series length");
     }

@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+
 #include <cmath>
+
 #include "backtest/performance.h"
 
 using namespace barcola;
@@ -81,9 +83,12 @@ TEST(PerformanceTest, CalmarRatio_WithDrawdown_Positive) {
     double val = 100000.0;
     for (int i = 0; i < 252; ++i) {
         equity.push_back(val);
-        if (i < 50) val *= 1.002;       // growth
-        else if (i < 100) val *= 0.998; // decline
-        else val *= 1.001;              // recovery
+        if (i < 50)
+            val *= 1.002;  // growth
+        else if (i < 100)
+            val *= 0.998;  // decline
+        else
+            val *= 1.001;  // recovery
     }
     const double calmar = calculateCalmarRatio(equity);
     EXPECT_GT(calmar, 0.0);
@@ -124,7 +129,7 @@ TEST(PerformanceTest, TradeStats_MixedTrades) {
     EXPECT_EQ(stats.winningTrades, 2u);
     EXPECT_EQ(stats.losingTrades, 1u);
     EXPECT_NEAR(stats.winRate, 2.0 / 3.0, 1e-10);
-    EXPECT_NEAR(stats.avgWin, 400.0, 1e-10);    // (500+300)/2
+    EXPECT_NEAR(stats.avgWin, 400.0, 1e-10);  // (500+300)/2
     EXPECT_NEAR(stats.avgLoss, 200.0, 1e-10);
     EXPECT_NEAR(stats.profitFactor, 800.0 / 200.0, 1e-10);  // 4.0
 }
@@ -176,8 +181,8 @@ TEST(PerformanceTest, SharpeFromReturns_MatchesEquityCurveVersion) {
         returns.push_back(r);
         equity.push_back(equity.back() * (1.0 + r));
     }
-    EXPECT_NEAR(calculateSharpeRatioFromReturns(returns, 0.02),
-                calculateSharpeRatio(equity, 0.02), 1e-9);
+    EXPECT_NEAR(calculateSharpeRatioFromReturns(returns, 0.02), calculateSharpeRatio(equity, 0.02),
+                1e-9);
 }
 
 TEST(PerformanceTest, SharpeFromReturns_EmptyOrFlat_ReturnsZero) {

@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
+
 #include "analysis/market_data_analysis.h"
 
 using namespace barcola;
 
 static PriceHistory makeHistory(const std::vector<double>& closes) {
-    const std::vector<std::string> dates = {"2023-01-02", "2023-01-03", "2023-01-04",
-                                            "2023-01-05", "2023-01-06"};
+    const std::vector<std::string> dates = {"2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05",
+                                            "2023-01-06"};
     PriceHistory history("TEST");
     for (size_t i = 0; i < closes.size(); ++i) {
         history.addDataPoint(PricePoint(dates[i], closes[i]));

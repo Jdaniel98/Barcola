@@ -3,7 +3,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace barcola {
 
@@ -23,7 +22,7 @@ struct Holding {
 
 }  // namespace
 
-BacktestEngine::BacktestEngine(BacktestConfig config) : config_(std::move(config)) {
+BacktestEngine::BacktestEngine(BacktestConfig config) : config_(config) {
     if (!(config_.initialCapital > 0.0)) {
         throw std::invalid_argument("initialCapital must be positive");
     }
@@ -140,8 +139,8 @@ BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data)
     }
 
     const size_t periods = result.equityCurve.size() - 1;
-    result.exposure = static_cast<double>(barsInMarket) /
-                      static_cast<double>(result.equityCurve.size());
+    result.exposure =
+        static_cast<double>(barsInMarket) / static_cast<double>(result.equityCurve.size());
     result.totalReturn = result.equityCurve.back() / config_.initialCapital - 1.0;
     result.annualizedReturn = annualizeReturn(result.totalReturn, periods);
     result.sharpeRatio = calculateSharpeRatio(result.equityCurve, config_.riskFreeRate);

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "report/svg_chart.h"
 
 using namespace barcola;
@@ -55,9 +56,15 @@ TEST(SvgChartTest, NiceScale_InvalidInput_Throws) {
 
 TEST(SvgChartTest, FormatValue) {
     EXPECT_EQ(formatValue(0.672, ValueFormat::Decimal), "0.67");
-    EXPECT_EQ(formatValue(-0.07, ValueFormat::Decimal), "\xE2\x88\x92" "0.07");
-    EXPECT_EQ(formatValue(-0.24, ValueFormat::Percent), "\xE2\x88\x92" "24%");
-    EXPECT_EQ(formatValue(-0.238, ValueFormat::Percent), "\xE2\x88\x92" "23.8%");
+    EXPECT_EQ(formatValue(-0.07, ValueFormat::Decimal),
+              "\xE2\x88\x92"
+              "0.07");
+    EXPECT_EQ(formatValue(-0.24, ValueFormat::Percent),
+              "\xE2\x88\x92"
+              "24%");
+    EXPECT_EQ(formatValue(-0.238, ValueFormat::Percent),
+              "\xE2\x88\x92"
+              "23.8%");
     EXPECT_EQ(formatValue(0.0, ValueFormat::Percent), "0%");
     EXPECT_EQ(formatValue(125300.0, ValueFormat::Currency), "$125k");
     EXPECT_EQ(formatValue(1340000.0, ValueFormat::Currency), "$1.3M");
@@ -154,8 +161,12 @@ TEST(SvgChartTest, PanelChart_OnePanelPerSeriesWithLowestPointLabelled) {
 
     EXPECT_EQ(countOf(svg, "<polyline"), 2u);
     EXPECT_EQ(countOf(svg, "<polygon"), 2u);
-    EXPECT_NE(svg.find(">worst \xE2\x88\x92" "34%, Mar 2020<"), std::string::npos);
-    EXPECT_NE(svg.find(">worst \xE2\x88\x92" "10%, Mar 2020<"), std::string::npos);
+    EXPECT_NE(svg.find(">worst \xE2\x88\x92"
+                       "34%, Mar 2020<"),
+              std::string::npos);
+    EXPECT_NE(svg.find(">worst \xE2\x88\x92"
+                       "10%, Mar 2020<"),
+              std::string::npos);
 }
 
 TEST(SvgChartTest, PanelChart_MismatchedSeries_Throws) {

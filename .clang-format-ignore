@@ -1,0 +1,3 @@
+# Kept byte-identical to the pre-registration commit (8058082), whose timestamp
+# shows the Phase 7 parameters were fixed before the test data existed.
+apps/preregistration.h

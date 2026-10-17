@@ -18,7 +18,8 @@ on real market data, with verified math, professional engineering, and documente
   sharing `study_common`. `apps/preregistration.h` is Phase 7's pre-registered settings:
   do not change it after the test data is downloaded.
 - `scripts/` — `fetch_market_data.sh` downloads Tiingo prices into `data/market/` (or `--out DIR`);
-  `scripts/universes/` holds fixed symbol lists, e.g. the Phase 6 Dow 30 as of 2014
+  `scripts/universes/` holds fixed symbol lists, e.g. the Phase 6 Dow 30 as of 2014;
+  `check_format.sh` and `run_clang_tidy.sh` are the CI's formatting and lint checks
 - `docs/` — Study write-ups; `results/` — study outputs; `results/charts/` — SVG charts redrawn by `strategy_study`
 - `tests/` — Google Test suite, one test file per module
 - `data/` — Static CSV files for reproducible testing (never depend on network for tests).
@@ -31,6 +32,12 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
+
+CI also builds with `-DBARCOLA_WARNINGS_AS_ERRORS=ON`, runs the tests with `-DBARCOLA_SANITIZE=ON`
+(ASan + UBSan) and `-DBARCOLA_COVERAGE=ON` (gcovr, at least 85% of lines in `src/` and
+`strategies/`), and runs `scripts/check_format.sh` (clang-format 18.1.8) and
+`scripts/run_clang_tidy.sh build` (clang-tidy 18.1.8, `.clang-tidy`). Run the format and lint
+scripts before committing.
 
 ## C++ Standards & Idioms
 - **C++17 required.** Use `std::optional`, `std::string_view`, structured bindings,
@@ -46,6 +53,10 @@ ctest --test-dir build --output-on-failure
 - **Error handling:** Throw `std::runtime_error` or `std::invalid_argument` for unrecoverable
   errors. Return `std::optional` for expected-empty cases. Never silently swallow failures.
 - **No magic numbers.** Use named constants (`constexpr double RISK_FREE_RATE = 0.05;`).
+- **No warnings.** Code must build cleanly under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion
+  -Wsign-conversion`; cast explicitly where a conversion is intended.
+- **Formatting is clang-format's.** `scripts/check_format.sh --fix` formats everything except
+  `apps/preregistration.h`, which stays byte-identical to its pre-registration commit.
 
 ## Math Correctness (Critical)
 - Every numerical function must handle edge cases: division by zero, empty inputs,
@@ -82,3 +93,4 @@ Phase 4: Second strategy (dual MA crossover) + comparison
 Phase 5: Polish, visualizations, README rewrite
 Phase 6: Robustness (bootstrap intervals, walk-forward, cost sensitivity, Dow 30 universe)
 Phase 7: Pre-registered test on fresh data (2025-01 to 2026-09)
+Phase 8: Release polish (license, stricter CI, v1.0)

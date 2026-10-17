@@ -1,0 +1,4 @@
+# Tests read an optional only after ASSERT_TRUE(x.has_value()), which returns on failure;
+# the optional-access check doesn't model GoogleTest's ASSERT macros.
+InheritParentConfig: true
+Checks: '-bugprone-unchecked-optional-access'

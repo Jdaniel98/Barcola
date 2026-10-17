@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "core/price_point.h"
 #include "core/time_utils.h"
 

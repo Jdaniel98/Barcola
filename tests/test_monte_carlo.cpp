@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+
 #include <algorithm>
 #include <cmath>
+
 #include "core/time_utils.h"
 #include "simulation/monte_carlo.h"
 
@@ -13,7 +15,8 @@ static PriceHistory makeHistory(const std::vector<double>& closes) {
     PriceHistory history("SYNTH");
     const time_t start = convertDateToEpoch("2023-01-01");
     for (size_t i = 0; i < closes.size(); ++i) {
-        history.addDataPoint(PricePoint(start + static_cast<time_t>(i) * kSecondsPerDay, closes[i]));
+        history.addDataPoint(
+            PricePoint(start + static_cast<time_t>(i) * kSecondsPerDay, closes[i]));
     }
     return history;
 }
@@ -82,8 +85,10 @@ TEST(SmaCrossoverTest, FallThenRise_BuysOnGoldenCross) {
     // The short average crosses above the long one during the rise, so the rule buys and
     // ends with a profit. The old rule never bought here.
     std::vector<double> closes;
-    for (int i = 0; i < 60; ++i) closes.push_back(100.0 - 0.5 * i);
-    for (int i = 1; i <= 60; ++i) closes.push_back(70.0 + i);
+    for (int i = 0; i < 60; ++i)
+        closes.push_back(100.0 - 0.5 * i);
+    for (int i = 1; i <= 60; ++i)
+        closes.push_back(70.0 + i);
 
     EXPECT_GT(runSmaCrossover(closes, 100000.0), 0.0);
 }
@@ -92,8 +97,10 @@ TEST(SmaCrossoverTest, RiseThenFall_NeverBuys) {
     // The only crossover is a death cross, which sells, and there is nothing to sell.
     // The old rule bought on it and lost money as prices fell.
     std::vector<double> closes;
-    for (int i = 0; i < 60; ++i) closes.push_back(70.0 + 0.5 * i);
-    for (int i = 1; i <= 60; ++i) closes.push_back(100.0 - i);
+    for (int i = 0; i < 60; ++i)
+        closes.push_back(70.0 + 0.5 * i);
+    for (int i = 1; i <= 60; ++i)
+        closes.push_back(100.0 - i);
 
     EXPECT_DOUBLE_EQ(runSmaCrossover(closes, 100000.0), 0.0);
 }

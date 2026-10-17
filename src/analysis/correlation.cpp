@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <numeric>
 #include <stdexcept>
 
@@ -23,8 +24,7 @@ std::vector<double> logReturns(const std::vector<double>& prices) {
 
 }  // namespace
 
-CorrelationAnalysis::CorrelationAnalysis(const PriceHistory& historyA,
-                                         const PriceHistory& historyB)
+CorrelationAnalysis::CorrelationAnalysis(const PriceHistory& historyA, const PriceHistory& historyB)
     : historyA_(historyA), historyB_(historyB) {}
 
 double CorrelationAnalysis::calculateCorrelation() const {
@@ -63,8 +63,11 @@ double calculateCorrelation(const std::vector<double>& a, const std::vector<doub
         return 0.0;
     }
 
-    const double meanA = std::accumulate(a.begin(), a.begin() + n, 0.0) / static_cast<double>(n);
-    const double meanB = std::accumulate(b.begin(), b.begin() + n, 0.0) / static_cast<double>(n);
+    const auto count = static_cast<std::ptrdiff_t>(n);
+    const double meanA =
+        std::accumulate(a.begin(), a.begin() + count, 0.0) / static_cast<double>(n);
+    const double meanB =
+        std::accumulate(b.begin(), b.begin() + count, 0.0) / static_cast<double>(n);
 
     double covariance = 0.0;
     double varianceA = 0.0;
