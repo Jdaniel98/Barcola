@@ -1,2 +1,5 @@
-add_executable(strategy_study strategy_study.cpp)
+add_executable(strategy_study strategy_study.cpp study_common.cpp)
 target_link_libraries(strategy_study PRIVATE barcola_strategies)
+
+add_executable(fresh_data_test fresh_data_test.cpp study_common.cpp)
+target_link_libraries(fresh_data_test PRIVATE barcola_strategies)
