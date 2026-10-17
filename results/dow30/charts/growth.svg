@@ -14,6 +14,8 @@ text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .c1{stroke:#2a78d6}.d1{fill:#2a78d6}
 .c2{stroke:#eb6834}.d2{fill:#eb6834}
+.c3{stroke:#1baf7a}.d3{fill:#1baf7a}
+.c4{stroke:#eda100}.d4{fill:#eda100}
 .cb{stroke:#898781}.db{fill:#898781}
 .ring{stroke:#fcfcfb;stroke-width:2}
 .hollow{fill:#fcfcfb;stroke-width:2}
@@ -21,6 +23,8 @@ text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 .glyphStroke{stroke:#52514e}
 .a1{fill:#2a78d6;fill-opacity:0.12}
 .a2{fill:#eb6834;fill-opacity:0.12}
+.a3{fill:#1baf7a;fill-opacity:0.12}
+.a4{fill:#eda100;fill-opacity:0.12}
 .ab{fill:#898781;fill-opacity:0.14}
 .connector{stroke:#898781;stroke-width:2}
 .leader{stroke:#898781;stroke-width:1}
@@ -34,12 +38,16 @@ text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 .axis{stroke:#383835}
 .c1{stroke:#3987e5}.d1{fill:#3987e5}
 .c2{stroke:#d95926}.d2{fill:#d95926}
+.c3{stroke:#199e70}.d3{fill:#199e70}
+.c4{stroke:#c98500}.d4{fill:#c98500}
 .ring{stroke:#1a1a19}
 .hollow{fill:#1a1a19}
 .glyph{fill:#c3c2b7;stroke:#c3c2b7}
 .glyphStroke{stroke:#c3c2b7}
 .a1{fill:#3987e5;fill-opacity:0.16}
 .a2{fill:#d95926;fill-opacity:0.16}
+.a3{fill:#199e70;fill-opacity:0.16}
+.a4{fill:#c98500;fill-opacity:0.16}
 .ref{stroke:#c3c2b7}
 .highlight{stroke:#ffffff}
 }

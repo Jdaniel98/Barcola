@@ -2,7 +2,7 @@
 
 A quantitative trading toolkit written from scratch in C++17, used to answer one question: **do two classic trading strategies, buying sharp dips and following trends, beat simply holding the stock?**
 
-**No.** On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs, buying dips fell well short of holding and following trends came close. A robustness study then checked those results against chance, against re-choosing parameters every year, and on 29 Dow stocks picked without hindsight. It confirmed that buying dips loses. Trend following's near-tie turned out to depend on the six hand-picked stocks: on the Dow, and in every year of the walk-forward test, it trailed holding as well.
+**No.** On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs, buying dips fell well short of holding and following trends came close. A robustness study then checked those results against chance, against re-choosing parameters every year, and on 29 Dow stocks picked without hindsight. It confirmed that buying dips loses. Trend following's near-tie turned out to depend on the six hand-picked stocks: on the Dow, and in every year of the walk-forward test, it trailed holding as well. Finally, a pre-registered test on 21 months of data no study had seen (2025–2026) agreed: every strategy trailed holding, and neither proposed fix for buying dips helped reliably.
 
 ![Growth of $100,000 in each strategy, 2020–2024](results/charts/growth.svg)
 
@@ -40,6 +40,19 @@ Four checks, on the original six symbols and on the 29 stocks of the Dow Jones i
 ![Walk-forward: average Sharpe ratio in each test year, 29 Dow stocks](results/dow30/charts/walk_forward.svg)
 
 The firmest result is that mean reversion, as tested, loses to holding. Neither strategy has a stable best setting: the parameters chosen each year keep changing. And the six original stocks flattered every approach, buy-and-hold most of all (16.7% a year on them, 8.6% on the Dow stocks).
+
+## The fresh-data test
+
+Every rule, parameter and hypothesis was committed and pushed to GitHub before any 2025–2026 prices were downloaded, then tested once on January 2025 to September 2026 ([pre-registration](docs/phase-7-preregistration.md), [results](docs/phase-7-results.md)). It also tested two fixes for mean reversion suggested by the earlier studies: buying dips only above the 200-day average, and selling after 21 trading days.
+
+| Hypothesis | Six symbols | 29 Dow stocks |
+|---|---|---|
+| Mean reversion trails buy-and-hold | **Supported** | Inconclusive (same direction) |
+| MA crossover trails buy-and-hold | Inconclusive (same direction) | **Supported** |
+| A 200-day trend filter improves mean reversion | Inconclusive | **Contradicted**: it made it worse |
+| A 21-day time stop improves mean reversion | Inconclusive | Inconclusive |
+
+Buy-and-hold returned about 21% a year on both universes; no strategy came close. Twenty-one months is short, so most comparisons are too uncertain to call, as the pre-registration expected.
 
 ## How the test was run
 
@@ -83,13 +96,13 @@ Each run prints every table in the write-ups and redraws the charts in its `char
 | **Risk** | Stop-based position sizing with a leverage cap, a volatility-based slippage model |
 | **Simulation** | Monte Carlo test of a moving-average crossover on bootstrapped price paths |
 | **Backtest** | Long-only engine with next-open fills, commission, slippage, warm-up history and interest on idle cash; Sharpe, Sortino, max drawdown, Calmar and trade statistics |
-| **Strategies** | Z-score mean reversion, moving-average crossover, buy-and-hold |
+| **Strategies** | Z-score mean reversion (with optional trend filter and time stop), moving-average crossover, buy-and-hold |
 | **Report** | SVG line, panel, dumbbell and strip charts with light and dark themes |
 
 ```
 src/          core/ indicators/ analysis/ risk/ simulation/ backtest/ report/
 strategies/   Strategy implementations
-apps/         strategy_study: the study behind the results above
+apps/         strategy_study (Phases 3-6) and fresh_data_test (Phase 7)
 scripts/      fetch_market_data.sh: Tiingo download; universes/: fixed symbol lists
 docs/         Study write-ups
 results/      Study outputs and charts
@@ -149,7 +162,7 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 
 ## Engineering
 
-- **210 tests in 21 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
+- **220 tests in 21 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
 - **Known-value tests for the math.** RSI, correlation, volatility, drawdown, annualized return, Bollinger Bands and the backtest's fills and sizing are checked against hand-calculated or independently computed values.
 - **Built to avoid backtest traps.** Strategies cannot see future bars, fills happen the next day, costs apply to every trade, and the engine, not the strategy, is the record of what is held.
 - **Reproducible.** Same data, same results, byte for byte. The Monte Carlo simulation uses a fixed seed and a standard-defined generator.
@@ -162,3 +175,4 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 - [x] **Phase 4:** Second strategy (dual MA crossover) + comparison ([write-up](docs/phase-4-results.md))
 - [x] **Phase 5:** Charts and a results-first README
 - [x] **Phase 6:** Robustness: bootstrap intervals, walk-forward, cost sensitivity, 29 Dow stocks ([write-up](docs/phase-6-robustness.md))
+- [x] **Phase 7:** Pre-registered test on fresh 2025–2026 data ([pre-registration](docs/phase-7-preregistration.md), [results](docs/phase-7-results.md))

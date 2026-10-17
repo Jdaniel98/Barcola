@@ -35,6 +35,8 @@ text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .c1{stroke:#2a78d6}.d1{fill:#2a78d6}
 .c2{stroke:#eb6834}.d2{fill:#eb6834}
+.c3{stroke:#1baf7a}.d3{fill:#1baf7a}
+.c4{stroke:#eda100}.d4{fill:#eda100}
 .cb{stroke:#898781}.db{fill:#898781}
 .ring{stroke:#fcfcfb;stroke-width:2}
 .hollow{fill:#fcfcfb;stroke-width:2}
@@ -42,6 +44,8 @@ text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 .glyphStroke{stroke:#52514e}
 .a1{fill:#2a78d6;fill-opacity:0.12}
 .a2{fill:#eb6834;fill-opacity:0.12}
+.a3{fill:#1baf7a;fill-opacity:0.12}
+.a4{fill:#eda100;fill-opacity:0.12}
 .ab{fill:#898781;fill-opacity:0.14}
 .connector{stroke:#898781;stroke-width:2}
 .leader{stroke:#898781;stroke-width:1}
@@ -55,12 +59,16 @@ text{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 .axis{stroke:#383835}
 .c1{stroke:#3987e5}.d1{fill:#3987e5}
 .c2{stroke:#d95926}.d2{fill:#d95926}
+.c3{stroke:#199e70}.d3{fill:#199e70}
+.c4{stroke:#c98500}.d4{fill:#c98500}
 .ring{stroke:#1a1a19}
 .hollow{fill:#1a1a19}
 .glyph{fill:#c3c2b7;stroke:#c3c2b7}
 .glyphStroke{stroke:#c3c2b7}
 .a1{fill:#3987e5;fill-opacity:0.16}
 .a2{fill:#d95926;fill-opacity:0.16}
+.a3{fill:#199e70;fill-opacity:0.16}
+.a4{fill:#c98500;fill-opacity:0.16}
 .ref{stroke:#c3c2b7}
 .highlight{stroke:#ffffff}
 }
@@ -73,6 +81,10 @@ std::string colorKey(SeriesColor color) {
             return "1";
         case SeriesColor::Second:
             return "2";
+        case SeriesColor::Third:
+            return "3";
+        case SeriesColor::Fourth:
+            return "4";
         case SeriesColor::Benchmark:
             return "b";
     }
@@ -140,25 +152,60 @@ struct LegendItem {
     LegendGlyph glyph;
 };
 
+double glyphWidth(LegendGlyph glyph) {
+    return glyph == LegendGlyph::Line ? 22.0 : 16.0;
+}
+
+// Row of each legend item: items flow left to right and wrap when the next would pass the
+// chart's right margin.
+std::vector<size_t> legendRows(const std::vector<LegendItem>& items) {
+    constexpr double LEFT = 24.0;
+    std::vector<size_t> rows;
+    double x = LEFT;
+    size_t row = 0;
+    for (const auto& item : items) {
+        const double width = glyphWidth(item.glyph) + textWidth(item.label);
+        if (x > LEFT && x + width > WIDTH - LEFT) {
+            ++row;
+            x = LEFT;
+        }
+        rows.push_back(row);
+        x += width + 24;
+    }
+    return rows;
+}
+
+constexpr double LEGEND_ROW_HEIGHT = 20.0;
+
+// Extra height a wrapped legend needs; everything below it moves down by this much.
+double legendExtraHeight(const std::vector<LegendItem>& items) {
+    const std::vector<size_t> rows = legendRows(items);
+    return rows.empty() ? 0.0 : static_cast<double>(rows.back()) * LEGEND_ROW_HEIGHT;
+}
+
 std::string legend(const std::vector<LegendItem>& items) {
+    const std::vector<size_t> rows = legendRows(items);
     std::string out;
     double x = 24.0;
-    for (const auto& item : items) {
+    for (size_t i = 0; i < items.size(); ++i) {
+        const auto& item = items[i];
+        if (i > 0 && rows[i] != rows[i - 1]) {
+            x = 24.0;
+        }
+        const double y = LEGEND_Y + static_cast<double>(rows[i]) * LEGEND_ROW_HEIGHT;
         switch (item.glyph) {
             case LegendGlyph::Line:
-                out += line(x, LEGEND_Y - 4, x + 16, LEGEND_Y - 4, "line " + item.glyphClass);
-                x += 22;
+                out += line(x, y - 4, x + 16, y - 4, "line " + item.glyphClass);
                 break;
             case LegendGlyph::Dot:
-                out += circle(x + 5, LEGEND_Y - 4, DOT_RADIUS, item.glyphClass);
-                x += 16;
+                out += circle(x + 5, y - 4, DOT_RADIUS, item.glyphClass);
                 break;
             case LegendGlyph::HollowDot:
-                out += circle(x + 5, LEGEND_Y - 4, DOT_RADIUS - 1, "hollow " + item.glyphClass);
-                x += 16;
+                out += circle(x + 5, y - 4, DOT_RADIUS - 1, "hollow " + item.glyphClass);
                 break;
         }
-        out += text(x, LEGEND_Y, "ink2", item.label);
+        x += glyphWidth(item.glyph);
+        out += text(x, y, "ink2", item.label);
         x += textWidth(item.label) + 24;
     }
     return out;
@@ -306,9 +353,13 @@ std::string renderLineChart(const LineChart& chart) {
     }
 
     const NiceScale scale = niceScale(lo, hi, 6);
+    std::vector<LegendItem> items;
+    for (const auto& s : chart.series) {
+        items.push_back({s.name, "c" + colorKey(s.color), LegendGlyph::Line});
+    }
     const double left = 72.0;
     const double right = WIDTH - 96.0;
-    const double top = PLOT_TOP;
+    const double top = PLOT_TOP + legendExtraHeight(items);
     const double bottom = top + 260.0;
     const double height = bottom + 40.0;
     const auto x = [&](size_t i) {
@@ -317,13 +368,7 @@ std::string renderLineChart(const LineChart& chart) {
     const auto y = [&](double v) { return project(scale, v, bottom, top); };
 
     std::ostringstream out;
-    out << header(height, chart.title, chart.subtitle);
-
-    std::vector<LegendItem> items;
-    for (const auto& s : chart.series) {
-        items.push_back({s.name, "c" + colorKey(s.color), LegendGlyph::Line});
-    }
-    out << legend(items);
+    out << header(height, chart.title, chart.subtitle) << legend(items);
 
     for (double tick : scale.ticks) {
         out << line(left, y(tick), right, y(tick), "grid")
@@ -555,17 +600,17 @@ std::string renderStripChart(const StripChart& chart) {
     constexpr double ROW_HEIGHT = 92.0;
     const double left = 190.0;
     const double right = WIDTH - 48.0;
-    const double top = PLOT_TOP + 20.0;  // room for the reference label
+    std::vector<LegendItem> items;
+    for (const auto& row : chart.rows) {
+        items.push_back({row.label, "d" + colorKey(row.color), LegendGlyph::Dot});
+    }
+    const double top = PLOT_TOP + 20.0 + legendExtraHeight(items);  // room for the reference label
     const double bottom = top + ROW_HEIGHT * static_cast<double>(chart.rows.size());
     const double height = bottom + 60.0;
     const auto x = [&](double v) { return project(scale, v, left, right); };
 
     std::ostringstream out;
     out << header(height, chart.title, chart.subtitle);
-    std::vector<LegendItem> items;
-    for (const auto& row : chart.rows) {
-        items.push_back({row.label, "d" + colorKey(row.color), LegendGlyph::Dot});
-    }
     out << legend(items) << valueAxisX(scale, left, right, top, bottom, chart.format)
         << line(left, bottom, right, bottom, "axis")
         << text((left + right) / 2.0, bottom + 40, "tick", chart.axisLabel, "middle");
