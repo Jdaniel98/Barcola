@@ -14,13 +14,15 @@ on real market data, with verified math, professional engineering, and documente
 - `src/backtest/` — (Phase 2) Backtesting engine, strategy interface, performance metrics
 - `src/report/` — (Phase 5) SVG charts for the write-ups, light and dark themes
 - `strategies/` — Strategy implementations (mean reversion, MA crossover, buy-and-hold benchmark)
-- `apps/` — Study programs: `strategy_study` (Phases 3 and 4)
+- `apps/` — Study programs: `strategy_study` (Phases 3–6) and `fresh_data_test` (Phase 7),
+  sharing `study_common`. `apps/preregistration.h` is Phase 7's pre-registered settings:
+  do not change it after the test data is downloaded.
 - `scripts/` — `fetch_market_data.sh` downloads Tiingo prices into `data/market/` (or `--out DIR`);
   `scripts/universes/` holds fixed symbol lists, e.g. the Phase 6 Dow 30 as of 2014
 - `docs/` — Study write-ups; `results/` — study outputs; `results/charts/` — SVG charts redrawn by `strategy_study`
 - `tests/` — Google Test suite, one test file per module
 - `data/` — Static CSV files for reproducible testing (never depend on network for tests).
-  `data/market/` and `data/dow30/` hold downloaded Tiingo prices and are not committed
+  `data/market/`, `data/dow30/` and `data/fresh/` hold downloaded Tiingo prices and are not committed
   (redistribution restricted); neither are study outputs that contain prices.
 
 ## Build
@@ -79,3 +81,4 @@ Phase 3: Run mean reversion backtest + document results
 Phase 4: Second strategy (dual MA crossover) + comparison
 Phase 5: Polish, visualizations, README rewrite
 Phase 6: Robustness (bootstrap intervals, walk-forward, cost sensitivity, Dow 30 universe)
+Phase 7: Pre-registered test on fresh data (2025-01 to 2026-09)
