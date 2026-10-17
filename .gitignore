@@ -52,3 +52,6 @@ results/**/equity_out_of_sample.csv
 
 # Phase 6 universe prices from Tiingo, also not redistributable
 data/dow30/
+
+# Phase 7 fresh test data (2025 onward), also from Tiingo
+data/fresh/

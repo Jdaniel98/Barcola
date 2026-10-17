@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # Downloads daily prices from Tiingo into a data folder, one <SYMBOL>.csv per symbol.
 #
-# Usage: scripts/fetch_market_data.sh [--out DIR] [SYMBOL ...]
-#   --out DIR  folder for the CSV files, relative to the repository root (default: data/market)
-#   SYMBOL     defaults to the Phase 3 study universe: SPY AAPL MSFT JPM XOM KO
+# Usage: scripts/fetch_market_data.sh [--out DIR] [--from DATE] [--to DATE] [SYMBOL ...]
+#   --out DIR    folder for the CSV files, relative to the repository root (default: data/market)
+#   --from DATE  first date, YYYY-MM-DD (default: 2012-01-01)
+#   --to DATE    last date, YYYY-MM-DD (default: 2024-12-31)
+#   SYMBOL       defaults to the Phase 3 study universe: SPY AAPL MSFT JPM XOM KO
 #
 # Phase 6 Dow 30 universe:
 #   scripts/fetch_market_data.sh --out data/dow30 $(grep -v '^#' scripts/universes/dow30_2014.txt)
 #   (lines starting with # are skipped, including excluded symbols)
+#
+# Phase 7 fresh test data (2025 onward, with a year of history before it):
+#   scripts/fetch_market_data.sh --out data/fresh/market --from 2023-06-01 --to 2026-09-30
+#   scripts/fetch_market_data.sh --out data/fresh/dow30 --from 2023-06-01 --to 2026-09-30 \
+#       $(grep -v '^#' scripts/universes/dow30_2014.txt)
 #
 # Needs a free Tiingo API token (https://www.tiingo.com/account/api/token). The script
 # reads it from TIINGO_API_TOKEN or asks for it without echoing; it is only sent in the
@@ -24,17 +31,34 @@ API="https://api.tiingo.com"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 OUT_DIR="${REPO_ROOT}/data/market"
-if [ "${1:-}" = "--out" ]; then
-    if [ -z "${2:-}" ]; then
-        echo "--out needs a folder" >&2
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --out | --from | --to)
+            if [ -z "${2:-}" ]; then
+                echo "$1 needs a value" >&2
+                exit 1
+            fi
+            case "$1" in
+                --out)
+                    case "$2" in
+                        /*) OUT_DIR="$2" ;;
+                        *) OUT_DIR="${REPO_ROOT}/$2" ;;
+                    esac
+                    ;;
+                --from) START_DATE="$2" ;;
+                --to) END_DATE="$2" ;;
+            esac
+            shift 2
+            ;;
+        *) break ;;
+    esac
+done
+for date in "$START_DATE" "$END_DATE"; do
+    if ! printf '%s' "$date" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+        echo "Dates must be YYYY-MM-DD: $date" >&2
         exit 1
     fi
-    case "$2" in
-        /*) OUT_DIR="$2" ;;
-        *) OUT_DIR="${REPO_ROOT}/$2" ;;
-    esac
-    shift 2
-fi
+done
 
 if [ $# -eq 0 ]; then
     set -- SPY AAPL MSFT JPM XOM KO
