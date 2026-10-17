@@ -182,7 +182,9 @@ void printHoldingPeriods(const std::string& title, const std::vector<Row>& rows)
                     continue;
                 }
                 ++count;
-                wins += trade.returnPct > 0.0 ? 1 : 0;
+                if (trade.returnPct > 0.0) {
+                    ++wins;
+                }
                 returnSum += trade.returnPct;
             }
         }
@@ -566,7 +568,9 @@ void printWalkForward(const std::vector<Family>& families, const WalkForward& wf
         const StitchedMetrics m = stitchedMetrics(wf.returns[s]);
         size_t ahead = 0;
         for (size_t y = 0; y < wf.years.size(); ++y) {
-            ahead += wf.yearlySharpe[s][y] > wf.yearlySharpe[benchmark][y] ? 1 : 0;
+            if (wf.yearlySharpe[s][y] > wf.yearlySharpe[benchmark][y]) {
+                ++ahead;
+            }
         }
         std::cout << "| " << wf.returns[s].name << " | " << percent(m.cagr) << " | "
                   << fixed2(m.sharpe) << " | " << percent(m.maxDrawdown) << " | "
