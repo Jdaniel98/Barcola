@@ -197,3 +197,26 @@ TEST(SvgChartTest, LineChart_FourSeriesColors) {
     EXPECT_EQ(countOf(svg, ".c3{"), 2u);
     EXPECT_EQ(countOf(svg, ".c4{"), 2u);
 }
+
+TEST(SvgChartTest, LineChart_LongLegendWrapsAndPlotMovesDown) {
+    LineChart one;
+    one.dates = {"2025-01-02", "2026-01-02"};
+    one.series = {{"A", SeriesColor::First, {1, 2}}};
+
+    LineChart many = one;
+    many.series = {{"Mean reversion", SeriesColor::First, {1, 2}},
+                   {"MA crossover", SeriesColor::Second, {1, 2}},
+                   {"Mean reversion + trend filter", SeriesColor::Third, {1, 2}},
+                   {"Mean reversion + time stop", SeriesColor::Fourth, {1, 2}},
+                   {"Buy-and-hold", SeriesColor::Benchmark, {1, 2}}};
+
+    const auto heightOf = [](const std::string& svg) {
+        const size_t start = svg.find("height=\"") + 8;
+        return std::stod(svg.substr(start, svg.find('"', start) - start));
+    };
+    const std::string wrapped = renderLineChart(many);
+    // Legend labels sit on two rows (y=76 and y=96) and the chart grows to fit
+    EXPECT_NE(wrapped.find("y=\"76.0\" class=\"ink2\""), std::string::npos);
+    EXPECT_NE(wrapped.find("y=\"96.0\" class=\"ink2\""), std::string::npos);
+    EXPECT_GT(heightOf(wrapped), heightOf(renderLineChart(one)));
+}
