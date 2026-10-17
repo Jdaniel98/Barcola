@@ -25,8 +25,7 @@ struct MonteCarloResult {
 // average crosses above long) it invests 20% of cash; on a death cross it sells everything.
 // Shares still held are valued at the last price. Returns 0.0 with fewer than
 // MONTE_CARLO_MIN_BARS prices.
-[[nodiscard]] double runSmaCrossover(const std::vector<double>& closes,
-                                     double initialInvestment);
+[[nodiscard]] double runSmaCrossover(const std::vector<double>& closes, double initialInvestment);
 
 // Each simulation builds a synthetic price path as long as `history` by resampling its
 // daily log returns with replacement (a bootstrap), starting from the first close, and runs

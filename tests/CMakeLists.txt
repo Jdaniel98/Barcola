@@ -8,7 +8,7 @@ FetchContent_MakeAvailable(googletest)
 
 function(barcola_add_test name)
     add_executable(${name} ${name}.cpp)
-    target_link_libraries(${name} PRIVATE barcola GTest::gtest_main)
+    target_link_libraries(${name} PRIVATE barcola barcola_warnings GTest::gtest_main)
     target_include_directories(${name} PRIVATE ${PROJECT_SOURCE_DIR}/src)
     target_compile_definitions(${name} PRIVATE
         BARCOLA_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/data")
@@ -35,7 +35,7 @@ barcola_add_test(test_bootstrap)
 # Phase 2: backtest tests need strategies library too
 function(barcola_add_backtest_test name)
     add_executable(${name} ${name}.cpp)
-    target_link_libraries(${name} PRIVATE barcola_strategies GTest::gtest_main)
+    target_link_libraries(${name} PRIVATE barcola_strategies barcola_warnings GTest::gtest_main)
     target_include_directories(${name} PRIVATE
         ${PROJECT_SOURCE_DIR}/src
         ${PROJECT_SOURCE_DIR}/strategies)

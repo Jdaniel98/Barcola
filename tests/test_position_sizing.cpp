@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "risk/position_sizing.h"
 
 using namespace barcola;

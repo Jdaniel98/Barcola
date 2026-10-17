@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+
 #include <cmath>
+
 #include "backtest/backtest_engine.h"
 #include "mean_reversion_strategy.h"
 
@@ -31,8 +33,10 @@ class BuySellFixedStrategy : public Strategy {
 public:
     Signal evaluate(const BarView& bars, Position) override {
         const size_t idx = bars.size() - 1;
-        if (idx == 1) return Signal::BUY;
-        if (idx == 3) return Signal::SELL;
+        if (idx == 1)
+            return Signal::BUY;
+        if (idx == 3)
+            return Signal::SELL;
         return Signal::HOLD;
     }
     [[nodiscard]] std::string name() const override { return "BuySellFixed"; }

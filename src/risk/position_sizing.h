@@ -14,7 +14,7 @@ public:
     [[nodiscard]] double calculatePositionSize(double portfolioSize, double entryPrice) const;
     // Shares such that a stop-out loses maxLossAmount.
     [[nodiscard]] double calculatePositionSizeWithMaxLoss(double portfolioSize, double entryPrice,
-                                                         double maxLossAmount) const;
+                                                          double maxLossAmount) const;
 
     void setRiskPercentage(double percentage);
     void setStopLossPercentage(double percentage);

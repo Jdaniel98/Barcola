@@ -30,8 +30,7 @@ void requireTradeInputs(double portfolioSize, double entryPrice) {
 
 }  // namespace
 
-PositionSizing::PositionSizing(double riskPercentage, double stopLossPercentage,
-                               double maxLeverage)
+PositionSizing::PositionSizing(double riskPercentage, double stopLossPercentage, double maxLeverage)
     : riskPercentage_(riskPercentage),
       stopLossPercentage_(stopLossPercentage),
       maxLeverage_(maxLeverage) {
@@ -61,8 +60,7 @@ double PositionSizing::calculatePositionSizeWithMaxLoss(double portfolioSize, do
 
 // FIX: a tight stop used to produce positions worth several times the portfolio without
 // any warning (2% risk with a 1% stop meant 200% of the portfolio).
-double PositionSizing::capToLeverage(double shares, double portfolioSize,
-                                     double entryPrice) const {
+double PositionSizing::capToLeverage(double shares, double portfolioSize, double entryPrice) const {
     const double maxShares = portfolioSize * maxLeverage_ / entryPrice;
     return std::min(shares, maxShares);
 }

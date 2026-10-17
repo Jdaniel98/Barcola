@@ -60,7 +60,7 @@ std::string PricePoint::toString() const {
 }
 
 void PricePoint::printPricePoint() const {
-    std::cout << toString() << std::endl;
+    std::cout << toString() << '\n';
 }
 
 }  // namespace barcola

@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+
 #include <cmath>
+
 #include "indicators/moving_average.h"
 
 using namespace barcola;

@@ -1,0 +1,22 @@
+# Focused lint: likely bugs and needless copies. Style is clang-format's job, implicit
+# conversions are the compiler's (-Wconversion), and micro-optimizations such as reserve()
+# before a loop or narrow enum types are left out on purpose.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  clang-analyzer-*,
+  misc-definitions-in-headers,
+  misc-redundant-expression,
+  misc-unused-using-decls,
+  modernize-use-nullptr,
+  modernize-use-override,
+  performance-*,
+  -performance-enum-size,
+  -performance-inefficient-vector-operation,
+  readability-container-size-empty,
+  readability-make-member-function-const,
+  readability-redundant-string-cstr
+WarningsAsErrors: '*'
+HeaderFilterRegex: '/(src|strategies|apps|tests)/'

@@ -11,7 +11,6 @@ namespace barcola {
 class PriceHistory {
 public:
     explicit PriceHistory(const std::string& assetSymbol);
-    ~PriceHistory() = default;
 
     // Data access
     [[nodiscard]] size_t dataPointsCount() const;

@@ -39,7 +39,7 @@ void MeanReversion::printMeanReversionResults() const {
     for (size_t i = 0; i < meanReversionValues_.size(); ++i) {
         const size_t dataIdx = i + windowSize - 1;
         std::cout << "Date: " << dataPoints[dataIdx].getDateString()
-                  << " Deviation: " << meanReversionValues_[i] << std::endl;
+                  << " Deviation: " << meanReversionValues_[i] << '\n';
     }
 }
 
@@ -65,18 +65,18 @@ size_t MeanReversion::getMaxMeanReversionIndex() const {
     if (meanReversionValues_.empty()) {
         throw std::out_of_range("No mean reversion values computed");
     }
-    return static_cast<size_t>(std::distance(
-        meanReversionValues_.begin(),
-        std::max_element(meanReversionValues_.begin(), meanReversionValues_.end())));
+    return static_cast<size_t>(
+        std::distance(meanReversionValues_.begin(),
+                      std::max_element(meanReversionValues_.begin(), meanReversionValues_.end())));
 }
 
 size_t MeanReversion::getMinMeanReversionIndex() const {
     if (meanReversionValues_.empty()) {
         throw std::out_of_range("No mean reversion values computed");
     }
-    return static_cast<size_t>(std::distance(
-        meanReversionValues_.begin(),
-        std::min_element(meanReversionValues_.begin(), meanReversionValues_.end())));
+    return static_cast<size_t>(
+        std::distance(meanReversionValues_.begin(),
+                      std::min_element(meanReversionValues_.begin(), meanReversionValues_.end())));
 }
 
 const std::vector<double>& MeanReversion::getValues() const {

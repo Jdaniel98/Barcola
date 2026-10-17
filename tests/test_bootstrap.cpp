@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "analysis/bootstrap.h"
 
 using namespace barcola;

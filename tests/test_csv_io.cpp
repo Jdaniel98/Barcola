@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+
 #include <filesystem>
 #include <fstream>
+
 #include "core/price_history.h"
 
 using namespace barcola;
@@ -92,10 +94,11 @@ TEST(CsvIOTest, LoadTwice_ReplacesData) {
 }
 
 TEST(CsvIOTest, UnsortedRows_AreSorted) {
-    TempCsv csv("unsorted", "Date,Open,High,Low,Close\n"
-                            "2023-01-05,3,3,3,3\n"
-                            "2023-01-03,1,1,1,1\n"
-                            "2023-01-04,2,2,2,2\n");
+    TempCsv csv("unsorted",
+                "Date,Open,High,Low,Close\n"
+                "2023-01-05,3,3,3,3\n"
+                "2023-01-03,1,1,1,1\n"
+                "2023-01-04,2,2,2,2\n");
     PriceHistory history("TEST");
     history.loadFromCsv(csv.path());
     ASSERT_EQ(history.dataPointsCount(), 3u);
@@ -104,17 +107,19 @@ TEST(CsvIOTest, UnsortedRows_AreSorted) {
 }
 
 TEST(CsvIOTest, DuplicateDate_Throws) {
-    TempCsv csv("duplicate", "Date,Open,High,Low,Close\n"
-                             "2023-01-03,1,1,1,1\n"
-                             "2023-01-03,2,2,2,2\n");
+    TempCsv csv("duplicate",
+                "Date,Open,High,Low,Close\n"
+                "2023-01-03,1,1,1,1\n"
+                "2023-01-03,2,2,2,2\n");
     PriceHistory history("TEST");
     EXPECT_THROW(history.loadFromCsv(csv.path()), std::runtime_error);
 }
 
 TEST(CsvIOTest, MalformedNumber_ErrorNamesLine) {
-    TempCsv csv("malformed", "Date,Open,High,Low,Close\n"
-                             "2023-01-03,1,1,1,1\n"
-                             "2023-01-04,1,abc,1,1\n");
+    TempCsv csv("malformed",
+                "Date,Open,High,Low,Close\n"
+                "2023-01-03,1,1,1,1\n"
+                "2023-01-04,1,abc,1,1\n");
     PriceHistory history("TEST");
     try {
         history.loadFromCsv(csv.path());
@@ -133,10 +138,11 @@ TEST(CsvIOTest, MissingColumn_Throws) {
 }
 
 TEST(CsvIOTest, NullRows_Skipped) {
-    TempCsv csv("nulls", "Date,Open,High,Low,Close\n"
-                         "2023-01-03,1,1,1,1\n"
-                         "2023-01-04,null,null,null,null\n"
-                         "2023-01-05,3,3,3,3\n");
+    TempCsv csv("nulls",
+                "Date,Open,High,Low,Close\n"
+                "2023-01-03,1,1,1,1\n"
+                "2023-01-04,null,null,null,null\n"
+                "2023-01-05,3,3,3,3\n");
     PriceHistory history("TEST");
     history.loadFromCsv(csv.path());
     EXPECT_EQ(history.dataPointsCount(), 2u);
@@ -144,8 +150,9 @@ TEST(CsvIOTest, NullRows_Skipped) {
 
 TEST(CsvIOTest, AdjClose_ScalesAllPrices) {
     // Yahoo layout. Adj Close / Close = 0.5, so every price is halved.
-    TempCsv csv("adjusted", "Date,Open,High,Low,Close,Adj Close,Volume\n"
-                            "2023-01-03,100,110,90,104,52,1000\n");
+    TempCsv csv("adjusted",
+                "Date,Open,High,Low,Close,Adj Close,Volume\n"
+                "2023-01-03,100,110,90,104,52,1000\n");
     PriceHistory history("TEST");
     history.loadFromCsv(csv.path());
     ASSERT_EQ(history.dataPointsCount(), 1u);
