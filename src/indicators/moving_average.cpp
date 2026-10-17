@@ -110,7 +110,7 @@ void printMovingAverages(const PriceHistory& history, size_t windowSize,
 
         std::cout << "Date: " << dataPoints[i].getDateString()
                   << " Closing Price: " << closingPrice << " SMA: " << sma.getSMA()
-                  << " EMA: " << ema.getEMA(emaSmoothingFactor) << std::endl;
+                  << " EMA: " << ema.getEMA(emaSmoothingFactor) << '\n';
     }
 }
 

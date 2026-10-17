@@ -622,7 +622,7 @@ std::string coverageProblem(const PriceHistory& history) {
     const auto& points = history.getDataPoints();
     const time_t firstNeeded =
         convertDateToEpoch(std::to_string(FIRST_TEST_YEAR - TRAIN_YEARS) + "-01-01");
-    const time_t lastNeeded = convertDateToEpoch(OUT_OF_SAMPLE.end) - 7 * 86400;
+    const time_t lastNeeded = convertDateToEpoch(OUT_OF_SAMPLE.end) - END_DATE_TOLERANCE;
     const size_t barsBefore = static_cast<size_t>(
         std::lower_bound(points.begin(), points.end(), firstNeeded,
                          [](const PricePoint& p, time_t value) { return p.getDate() < value; }) -

@@ -12,7 +12,6 @@ public:
                double closing);
     PricePoint(time_t date, double price);
     PricePoint(const std::string& date, double price);
-    ~PricePoint() = default;
 
     [[nodiscard]] time_t getDate() const;
     [[nodiscard]] std::string getDateString() const;
