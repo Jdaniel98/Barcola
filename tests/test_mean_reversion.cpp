@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "analysis/mean_reversion.h"
 
 using namespace barcola;

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <vector>
+
 #include "backtest/strategy.h"
 
 namespace barcola {
@@ -25,27 +26,21 @@ struct TradeStatistics {
 // (one fewer than the number of bars). Returns 0 for zero periods and -1 for a total loss.
 [[nodiscard]] double annualizeReturn(double totalReturn, size_t periods);
 
-[[nodiscard]] double calculateSharpeRatio(
-    const std::vector<double>& equityCurve,
-    double riskFreeRate = DEFAULT_RISK_FREE_RATE);
+[[nodiscard]] double calculateSharpeRatio(const std::vector<double>& equityCurve,
+                                          double riskFreeRate = DEFAULT_RISK_FREE_RATE);
 
 // Annualized Sharpe ratio of daily returns: mean excess return over the population standard
 // deviation, times sqrt(252). Returns 0 for no returns or zero volatility.
-[[nodiscard]] double calculateSharpeRatioFromReturns(
-    const std::vector<double>& dailyReturns,
-    double riskFreeRate = DEFAULT_RISK_FREE_RATE);
+[[nodiscard]] double calculateSharpeRatioFromReturns(const std::vector<double>& dailyReturns,
+                                                     double riskFreeRate = DEFAULT_RISK_FREE_RATE);
 
-[[nodiscard]] double calculateMaxDrawdown(
-    const std::vector<double>& equityCurve);
+[[nodiscard]] double calculateMaxDrawdown(const std::vector<double>& equityCurve);
 
-[[nodiscard]] double calculateSortinoRatio(
-    const std::vector<double>& equityCurve,
-    double riskFreeRate = DEFAULT_RISK_FREE_RATE);
+[[nodiscard]] double calculateSortinoRatio(const std::vector<double>& equityCurve,
+                                           double riskFreeRate = DEFAULT_RISK_FREE_RATE);
 
-[[nodiscard]] double calculateCalmarRatio(
-    const std::vector<double>& equityCurve);
+[[nodiscard]] double calculateCalmarRatio(const std::vector<double>& equityCurve);
 
-[[nodiscard]] TradeStatistics analyzeTradeHistory(
-    const std::vector<Trade>& trades);
+[[nodiscard]] TradeStatistics analyzeTradeHistory(const std::vector<Trade>& trades);
 
 }  // namespace barcola

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
-#include "indicators/rsi.h"
+
 #include "core/price_history.h"
+#include "indicators/rsi.h"
 
 using namespace barcola;
 
@@ -70,8 +71,10 @@ TEST(RSITest, UsesLatestPrices_NotFirstWindow) {
     // Regression: RSI only looked at the first `period` changes. Prices rise for 15 bars and
     // then fall for 15; the old code returned 100, the latest RSI is well below 50.
     std::vector<double> prices;
-    for (int i = 0; i <= 15; ++i) prices.push_back(100.0 + i);
-    for (int i = 1; i <= 15; ++i) prices.push_back(115.0 - i);
+    for (int i = 0; i <= 15; ++i)
+        prices.push_back(100.0 + i);
+    for (int i = 1; i <= 15; ++i)
+        prices.push_back(115.0 - i);
 
     const auto rsi = calculateRSI(prices, 14);
     ASSERT_TRUE(rsi.has_value());

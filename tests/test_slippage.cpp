@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+
 #include <cmath>
+
 #include "core/time_utils.h"
 #include "risk/slippage_model.h"
 
@@ -72,8 +74,8 @@ TEST(SlippageTest, UsesOnlyEarlierBars) {
 TEST(SlippageTest, RoundTripCost_IsPositive) {
     const PriceHistory history = loadAapl();
     SlippageModel model(history, 5.0);
-    const double cost = model.roundTripCost(dateOf(history, 10), 130.0, dateOf(history, 20),
-                                            140.0, 100.0);
+    const double cost =
+        model.roundTripCost(dateOf(history, 10), 130.0, dateOf(history, 20), 140.0, 100.0);
     // At least the base cost on both legs: 100 * (130 + 140) * 0.0005
     EXPECT_GE(cost, 100.0 * (130.0 + 140.0) * 0.0005);
 }

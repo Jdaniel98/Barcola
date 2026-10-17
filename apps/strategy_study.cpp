@@ -60,9 +60,13 @@ constexpr int TRAIN_YEARS = 3;
 constexpr size_t MAX_LISTED_SYMBOLS = 8;
 
 std::vector<Family> studyFamilies() {
-    Family meanReversion{"MeanReversion", "Mean reversion", "MR", "mean_reversion",
+    Family meanReversion{"MeanReversion",
+                         "Mean reversion",
+                         "MR",
+                         "mean_reversion",
                          SeriesColor::First,
-                         {"lookback", "entry_z", "exit_z"}, {},
+                         {"lookback", "entry_z", "exit_z"},
+                         {},
                          [](const Params& p) -> std::unique_ptr<Strategy> {
                              return std::make_unique<MeanReversionStrategy>(
                                  static_cast<size_t>(p[0]), p[1], p[2]);
@@ -75,8 +79,13 @@ std::vector<Family> studyFamilies() {
         }
     }
 
-    Family crossover{"MACrossover", "MA crossover", "MA", "ma_crossover", SeriesColor::Second,
-                     {"short_window", "long_window"}, {},
+    Family crossover{"MACrossover",
+                     "MA crossover",
+                     "MA",
+                     "ma_crossover",
+                     SeriesColor::Second,
+                     {"short_window", "long_window"},
+                     {},
                      [](const Params& p) -> std::unique_ptr<Strategy> {
                          return std::make_unique<MovingAverageCrossoverStrategy>(
                              static_cast<size_t>(p[0]), static_cast<size_t>(p[1]));
@@ -125,9 +134,9 @@ void printComparison(const std::string& title, const std::string& prefix,
         const auto& bh = buyAndHold[i].result;
         std::cout << "| " << strategy[i].symbol << " | " << percent(s.annualizedReturn) << " | "
                   << fixed2(s.sharpeRatio) << " | " << percent(s.maxDrawdown) << " | "
-                  << s.totalTrades << " | " << percent(s.winRate) << " | "
-                  << percent(s.exposure) << " | " << percent(bh.annualizedReturn) << " | "
-                  << fixed2(bh.sharpeRatio) << " | " << percent(bh.maxDrawdown) << " |\n";
+                  << s.totalTrades << " | " << percent(s.winRate) << " | " << percent(s.exposure)
+                  << " | " << percent(bh.annualizedReturn) << " | " << fixed2(bh.sharpeRatio)
+                  << " | " << percent(bh.maxDrawdown) << " |\n";
     }
 
     const auto cagr = [](const BacktestResult& r) { return r.annualizedReturn; };
@@ -138,10 +147,10 @@ void printComparison(const std::string& title, const std::string& prefix,
     std::cout << "| **Average** | " << percent(meanOf(strategy, cagr)) << " | "
               << fixed2(meanSharpe(strategy)) << " | " << percent(meanOf(strategy, drawdown))
               << " | " << fixed2(meanOf(strategy, trades)) << " | "
-              << percent(meanOf(strategy, winRate)) << " | "
-              << percent(meanOf(strategy, exposure)) << " | "
-              << percent(meanOf(buyAndHold, cagr)) << " | " << fixed2(meanSharpe(buyAndHold))
-              << " | " << percent(meanOf(buyAndHold, drawdown)) << " |\n";
+              << percent(meanOf(strategy, winRate)) << " | " << percent(meanOf(strategy, exposure))
+              << " | " << percent(meanOf(buyAndHold, cagr)) << " | "
+              << fixed2(meanSharpe(buyAndHold)) << " | " << percent(meanOf(buyAndHold, drawdown))
+              << " |\n";
 }
 
 // Trade outcomes grouped by how long the position was held (calendar days), pooled
@@ -198,8 +207,8 @@ struct FamilyResults {
     double medianOutOfSampleSharpe = 0.0;
     size_t positiveOutOfSample = 0;
     size_t beatBuyAndHoldOutOfSample = 0;
-    std::vector<Row> inSample;     // chosen parameters, one row per symbol
-    std::vector<Row> outOfSample;  // chosen parameters, one row per symbol
+    std::vector<Row> inSample;                   // chosen parameters, one row per symbol
+    std::vector<Row> outOfSample;                // chosen parameters, one row per symbol
     std::vector<double> outOfSampleSharpeBySet;  // mean across symbols, in grid order
     size_t chosenIndex = 0;
 };
@@ -235,12 +244,11 @@ FamilyResults studyFamily(const Family& family, const std::vector<PriceHistory>&
 
     writeGridCsv(resultsDir / (family.fileStem + "_in_sample_grid.csv"), family, family.grid,
                  inSampleGrid, symbols);
-    writeGridCsv(resultsDir / (family.fileStem + "_out_of_sample_grid.csv"), family,
-                 family.grid, outOfSampleGrid, symbols);
+    writeGridCsv(resultsDir / (family.fileStem + "_out_of_sample_grid.csv"), family, family.grid,
+                 outOfSampleGrid, symbols);
 
     const size_t best = static_cast<size_t>(
-        std::max_element(inSampleSharpe.begin(), inSampleSharpe.end()) -
-        inSampleSharpe.begin());
+        std::max_element(inSampleSharpe.begin(), inSampleSharpe.end()) - inSampleSharpe.begin());
 
     FamilyResults results;
     results.family = &family;
@@ -264,9 +272,9 @@ FamilyResults studyFamily(const Family& family, const std::vector<PriceHistory>&
     results.medianOutOfSampleSharpe =
         (sorted[(sorted.size() - 1) / 2] + sorted[sorted.size() / 2]) / 2.0;
 
-    results.inSample.assign(inSampleGrid.begin() + static_cast<std::ptrdiff_t>(best * symbols),
-                            inSampleGrid.begin() +
-                                static_cast<std::ptrdiff_t>((best + 1) * symbols));
+    results.inSample.assign(
+        inSampleGrid.begin() + static_cast<std::ptrdiff_t>(best * symbols),
+        inSampleGrid.begin() + static_cast<std::ptrdiff_t>((best + 1) * symbols));
     results.outOfSample.assign(
         outOfSampleGrid.begin() + static_cast<std::ptrdiff_t>(best * symbols),
         outOfSampleGrid.begin() + static_cast<std::ptrdiff_t>((best + 1) * symbols));
@@ -286,9 +294,9 @@ void printFamily(const FamilyResults& r, const std::vector<Row>& buyAndHoldIn,
               << "; best " << fixed2(r.bestOutOfSampleSharpe) << ", median "
               << fixed2(r.medianOutOfSampleSharpe) << ").\n"
               << "Out-of-sample, " << r.positiveOutOfSample << " of " << gridSize
-              << " parameter sets have a positive mean Sharpe and "
-              << r.beatBuyAndHoldOutOfSample << " beat buy-and-hold's mean Sharpe of "
-              << fixed2(meanSharpe(buyAndHoldOut)) << ".\n";
+              << " parameter sets have a positive mean Sharpe and " << r.beatBuyAndHoldOutOfSample
+              << " beat buy-and-hold's mean Sharpe of " << fixed2(meanSharpe(buyAndHoldOut))
+              << ".\n";
 
     printComparison(IN_SAMPLE.label + " " + IN_SAMPLE.start + " to " + IN_SAMPLE.end,
                     family.shortName, r.inSample, buyAndHoldIn);
@@ -382,12 +390,11 @@ void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& uni
     if (universe.size() > MAX_LISTED_SYMBOLS) {
         symbolList = universeLabel.empty() ? "" : universeLabel;
     }
-    const std::string accounts = "Average of " + std::to_string(universe.size()) +
-                                 " $100,000 accounts" +
-                                 (symbolList.empty() ? "" : " (" + symbolList + ")") +
-                                 ", after costs";
-    const std::string outPeriod = OUT_OF_SAMPLE.start.substr(0, 4) + "\xE2\x80\x93" +
-                                  OUT_OF_SAMPLE.end.substr(0, 4);
+    const std::string accounts =
+        "Average of " + std::to_string(universe.size()) + " $100,000 accounts" +
+        (symbolList.empty() ? "" : " (" + symbolList + ")") + ", after costs";
+    const std::string outPeriod =
+        OUT_OF_SAMPLE.start.substr(0, 4) + "\xE2\x80\x93" + OUT_OF_SAMPLE.end.substr(0, 4);
     const std::string inPeriod =
         IN_SAMPLE.start.substr(0, 4) + "\xE2\x80\x93" + IN_SAMPLE.end.substr(0, 4);
 
@@ -415,14 +422,13 @@ void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& uni
     // 3. Sharpe ratio in the selection period vs the test period
     DumbbellChart sharpe;
     sharpe.title = "Sharpe ratio: selection period vs test period";
-    sharpe.subtitle = "Parameters chosen on " + inPeriod + ", then run unchanged on " +
-                      outPeriod + ". Average of " + std::to_string(universe.size()) +
-                      " symbols.";
+    sharpe.subtitle = "Parameters chosen on " + inPeriod + ", then run unchanged on " + outPeriod +
+                      ". Average of " + std::to_string(universe.size()) + " symbols.";
     sharpe.fromLabel = inPeriod + " (in sample)";
     sharpe.toLabel = outPeriod + " (out of sample)";
     for (const auto& f : families) {
-        sharpe.rows.push_back({f.family->displayName, f.family->color,
-                               meanSharpe(f.inSample), meanSharpe(f.outOfSample)});
+        sharpe.rows.push_back({f.family->displayName, f.family->color, meanSharpe(f.inSample),
+                               meanSharpe(f.outOfSample)});
     }
     sharpe.rows.push_back({"Buy-and-hold", SeriesColor::Benchmark, meanSharpe(buyAndHoldIn),
                            meanSharpe(buyAndHoldOut)});
@@ -431,15 +437,13 @@ void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& uni
     // 4. Every parameter set out of sample against buy-and-hold
     StripChart sensitivity;
     sensitivity.title = "Every parameter set, " + outPeriod + " (out of sample)";
-    sensitivity.subtitle = "One dot per parameter set. Ringed: the set chosen on " + inPeriod +
-                           ".";
-    sensitivity.axisLabel = "Average Sharpe ratio across " + std::to_string(universe.size()) +
-                            " symbols, " + outPeriod;
+    sensitivity.subtitle = "One dot per parameter set. Ringed: the set chosen on " + inPeriod + ".";
+    sensitivity.axisLabel =
+        "Average Sharpe ratio across " + std::to_string(universe.size()) + " symbols, " + outPeriod;
     for (const auto& f : families) {
-        sensitivity.rows.push_back({f.family->displayName + " (" +
-                                        std::to_string(f.family->grid.size()) + " sets)",
-                                    f.family->color, f.outOfSampleSharpeBySet, f.chosenIndex,
-                                    "chosen"});
+        sensitivity.rows.push_back(
+            {f.family->displayName + " (" + std::to_string(f.family->grid.size()) + " sets)",
+             f.family->color, f.outOfSampleSharpeBySet, f.chosenIndex, "chosen"});
     }
     sensitivity.reference = ReferenceLine{"Buy-and-hold", meanSharpe(buyAndHoldOut)};
     writeFile(chartsDir / "parameter_sensitivity.svg", renderStripChart(sensitivity));
@@ -449,9 +453,9 @@ void writeCharts(const fs::path& chartsDir, const std::vector<PriceHistory>& uni
 
 struct WalkForward {
     std::vector<int> years;
-    std::vector<std::vector<std::string>> chosen;       // [family][year]
-    std::vector<std::vector<double>> yearlySharpe;      // [strategy][year], benchmark last
-    std::vector<ReturnSet> returns;                     // per strategy, benchmark last
+    std::vector<std::vector<std::string>> chosen;   // [family][year]
+    std::vector<std::vector<double>> yearlySharpe;  // [strategy][year], benchmark last
+    std::vector<ReturnSet> returns;                 // per strategy, benchmark last
 };
 
 // Re-choose each family's parameters every year on the TRAIN_YEARS before it and run them
@@ -566,9 +570,9 @@ void printWalkForward(const std::vector<Family>& families, const WalkForward& wf
         }
         std::cout << "| " << wf.returns[s].name << " | " << percent(m.cagr) << " | "
                   << fixed2(m.sharpe) << " | " << percent(m.maxDrawdown) << " | "
-                  << (s == benchmark ? std::string("-")
-                                     : std::to_string(ahead) + " of " +
-                                           std::to_string(wf.years.size()))
+                  << (s == benchmark
+                          ? std::string("-")
+                          : std::to_string(ahead) + " of " + std::to_string(wf.years.size()))
                   << " |\n";
     }
 }
@@ -584,8 +588,7 @@ void printCostSensitivity(const std::vector<FamilyResults>& results,
               << " bps slippage per side). Average of " << outOfSample.size()
               << " symbols.\n\n| Costs |";
     for (const auto& r : results) {
-        std::cout << " " << r.family->shortName << " CAGR | " << r.family->shortName
-                  << " Sharpe |";
+        std::cout << " " << r.family->shortName << " CAGR | " << r.family->shortName << " Sharpe |";
     }
     std::cout << " B&H CAGR | B&H Sharpe |\n|---|";
     for (size_t f = 0; f <= results.size(); ++f) {
@@ -724,8 +727,8 @@ int main(int argc, char* argv[]) {
                 for (const auto& row : *rows) {
                     for (const auto& t : row.result.trades) {
                         trades << row.window << "," << row.strategy << "," << t.symbol << ","
-                               << t.entryDate << "," << t.exitDate << "," << t.entryPrice
-                               << "," << t.exitPrice << "," << t.shares << "," << t.pnl << ","
+                               << t.entryDate << "," << t.exitDate << "," << t.entryPrice << ","
+                               << t.exitPrice << "," << t.shares << "," << t.pnl << ","
                                << t.returnPct << "\n";
                     }
                 }
@@ -745,8 +748,8 @@ int main(int argc, char* argv[]) {
                 const auto& curve = (*rows)[s].result.equityCurve;
                 for (size_t k = 0; k < curve.size(); ++k) {
                     equity << points[outOfSample[s].warmupBars + k].getDateString() << ","
-                           << (*rows)[s].symbol << "," << (*rows)[s].strategy << ","
-                           << curve[k] << "\n";
+                           << (*rows)[s].symbol << "," << (*rows)[s].strategy << "," << curve[k]
+                           << "\n";
                 }
             }
         }

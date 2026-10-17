@@ -31,8 +31,7 @@ WindowData sliceWindow(const PriceHistory& history, const Window& window) {
     return {history.between(points[windowIndex - warmup].getDate(), end), warmup};
 }
 
-BacktestResult runStrategy(Strategy& strategy, const WindowData& data,
-                           double costMultiplier) {
+BacktestResult runStrategy(Strategy& strategy, const WindowData& data, double costMultiplier) {
     BacktestConfig config;
     config.initialCapital = INITIAL_CAPITAL;
     config.commissionRate = COMMISSION_RATE * costMultiplier;
@@ -129,8 +128,9 @@ std::vector<double> averageEquity(const std::vector<Row>& rows) {
     for (const auto& row : rows) {
         const auto& curve = row.result.equityCurve;
         if (curve.size() != average.size()) {
-            throw std::runtime_error("Equity curves differ in length; symbols trade on "
-                                     "different days");
+            throw std::runtime_error(
+                "Equity curves differ in length; symbols trade on "
+                "different days");
         }
         for (size_t k = 0; k < curve.size(); ++k) {
             average[k] += curve[k] / static_cast<double>(rows.size());
@@ -216,10 +216,9 @@ std::vector<GapEstimate> computeBootstrap(const std::vector<ReturnSet>& sets) {
         e.gap = actual[a] - actual[b];
         e.low = percentile(gaps[p], 0.025);
         e.high = percentile(gaps[p], 0.975);
-        e.shareAhead =
-            static_cast<double>(std::count_if(gaps[p].begin(), gaps[p].end(),
-                                              [](double gap) { return gap > 0.0; })) /
-            static_cast<double>(BOOTSTRAP_RESAMPLES);
+        e.shareAhead = static_cast<double>(std::count_if(gaps[p].begin(), gaps[p].end(),
+                                                         [](double gap) { return gap > 0.0; })) /
+                       static_cast<double>(BOOTSTRAP_RESAMPLES);
         e.days = days;
         estimates.push_back(e);
     }
@@ -259,17 +258,16 @@ Selection chooseByMeanSharpe(const Family& family, const std::vector<WindowData>
 
 void writeMetrics(std::ostream& out, const BacktestResult& r) {
     out << r.totalReturn << "," << r.annualizedReturn << "," << r.sharpeRatio << ","
-        << r.sortinoRatio << "," << r.maxDrawdown << "," << r.calmarRatio << ","
-        << r.totalTrades << "," << r.winRate << "," << r.profitFactor << "," << r.avgHoldDays
-        << "," << r.exposure << "\n";
+        << r.sortinoRatio << "," << r.maxDrawdown << "," << r.calmarRatio << "," << r.totalTrades
+        << "," << r.winRate << "," << r.profitFactor << "," << r.avgHoldDays << "," << r.exposure
+        << "\n";
 }
 
 void writeSummaryCsv(const fs::path& path, const std::vector<Row>& rows) {
     std::ofstream out = openOutput(path);
     out << "window,strategy,symbol,params," << METRIC_COLUMNS << "\n";
     for (const auto& row : rows) {
-        out << row.window << "," << row.strategy << "," << row.symbol << "," << row.params
-            << ",";
+        out << row.window << "," << row.strategy << "," << row.symbol << "," << row.params << ",";
         writeMetrics(out, row.result);
     }
 }

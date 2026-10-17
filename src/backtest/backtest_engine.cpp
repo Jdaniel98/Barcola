@@ -139,8 +139,8 @@ BacktestResult BacktestEngine::run(Strategy& strategy, const PriceHistory& data)
     }
 
     const size_t periods = result.equityCurve.size() - 1;
-    result.exposure = static_cast<double>(barsInMarket) /
-                      static_cast<double>(result.equityCurve.size());
+    result.exposure =
+        static_cast<double>(barsInMarket) / static_cast<double>(result.equityCurve.size());
     result.totalReturn = result.equityCurve.back() / config_.initialCapital - 1.0;
     result.annualizedReturn = annualizeReturn(result.totalReturn, periods);
     result.sharpeRatio = calculateSharpeRatio(result.equityCurve, config_.riskFreeRate);

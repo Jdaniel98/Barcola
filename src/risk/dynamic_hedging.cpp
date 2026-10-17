@@ -27,7 +27,7 @@ std::vector<double> trimmedSMA(const std::vector<double>& values, size_t window)
 DynamicHedging::DynamicHedging(const PriceHistory& priceHistory) : priceHistory_(priceHistory) {}
 
 DynamicHedging::MAResult DynamicHedging::computeMovingAverages(size_t shortWindow,
-                                                                size_t longWindow) const {
+                                                               size_t longWindow) const {
     requireWindows(shortWindow, longWindow);
 
     const std::vector<double> closes = priceHistory_.getClosingPrices();
@@ -57,8 +57,7 @@ void DynamicHedging::performDynamicHedging(size_t shortWindow, size_t longWindow
     for (size_t i = 0; i < longMA.size(); ++i) {
         const auto currentDataPoint = priceHistory_.getDataPoint(i + longWindow - 1);
         std::cout << "Date: " << currentDataPoint.getDateString()
-                  << " Short MA: " << shortMA[i + longOffset] << " Long MA: " << longMA[i]
-                  << '\n';
+                  << " Short MA: " << shortMA[i + longOffset] << " Long MA: " << longMA[i] << '\n';
     }
 }
 
