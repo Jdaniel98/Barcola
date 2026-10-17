@@ -135,7 +135,7 @@ std::string verdict(double shareAhead, bool predictFirstAhead) {
 
 int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& universe) {
     const std::vector<PriceHistory> histories = loadExactUniverse(dataDir, universe);
-    const time_t lastNeeded = convertDateToEpoch(TEST.end) - 7 * 86400;
+    const time_t lastNeeded = convertDateToEpoch(TEST.end) - END_DATE_TOLERANCE;
     std::vector<WindowData> data;
     for (const auto& h : histories) {
         if (h.getDataPoints().back().getDate() < lastNeeded) {

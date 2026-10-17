@@ -3,7 +3,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace barcola {
 
@@ -23,7 +22,7 @@ struct Holding {
 
 }  // namespace
 
-BacktestEngine::BacktestEngine(BacktestConfig config) : config_(std::move(config)) {
+BacktestEngine::BacktestEngine(BacktestConfig config) : config_(config) {
     if (!(config_.initialCapital > 0.0)) {
         throw std::invalid_argument("initialCapital must be positive");
     }

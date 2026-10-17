@@ -39,7 +39,7 @@ void MeanReversion::printMeanReversionResults() const {
     for (size_t i = 0; i < meanReversionValues_.size(); ++i) {
         const size_t dataIdx = i + windowSize - 1;
         std::cout << "Date: " << dataPoints[dataIdx].getDateString()
-                  << " Deviation: " << meanReversionValues_[i] << std::endl;
+                  << " Deviation: " << meanReversionValues_[i] << '\n';
     }
 }
 

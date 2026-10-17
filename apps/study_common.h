@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -36,6 +37,9 @@ inline constexpr double INITIAL_CAPITAL = 100000.0;
 inline constexpr double COMMISSION_RATE = 0.001;  // 0.1% per side
 inline constexpr double SLIPPAGE_BPS = 5.0;       // per side
 inline constexpr double RISK_FREE_RATE = 0.0;     // no interest on cash and no Sharpe hurdle
+
+// A symbol's data may end up to a week before a window's last date (weekends and holidays).
+inline constexpr time_t END_DATE_TOLERANCE = time_t{7} * 24 * 60 * 60;
 
 struct Window {
     std::string name;

@@ -37,7 +37,7 @@ TEST(MeanReversionStrategyTest, Name_ContainsParameters) {
     MeanReversionStrategy strategy(20, 2.0, 0.0);
     const std::string n = strategy.name();
     EXPECT_NE(n.find("20"), std::string::npos);
-    EXPECT_NE(n.find("2"), std::string::npos);
+    EXPECT_NE(n.find('2'), std::string::npos);
 }
 
 TEST(MeanReversionStrategyTest, InsufficientHistory_ReturnsHold) {

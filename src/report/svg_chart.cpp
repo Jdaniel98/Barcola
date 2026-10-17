@@ -268,9 +268,11 @@ NiceScale niceScale(double dataMin, double dataMax, size_t maxTicks) {
     scale.step = nice(range / static_cast<double>(maxTicks - 1), true);
     scale.min = std::floor(dataMin / scale.step) * scale.step;
     scale.max = std::ceil(dataMax / scale.step) * scale.step;
-    for (double tick = scale.min; tick <= scale.max + scale.step * 1e-9; tick += scale.step) {
-        // Snap away accumulated rounding so 0.30000000000000004 prints as 0.3
-        scale.ticks.push_back(std::round(tick / scale.step) * scale.step);
+    // Count in whole steps, so no rounding accumulates and 0.30000000000000004 prints as 0.3
+    const auto firstStep = static_cast<long long>(std::round(scale.min / scale.step));
+    const auto lastStep = static_cast<long long>(std::round(scale.max / scale.step));
+    for (long long k = firstStep; k <= lastStep; ++k) {
+        scale.ticks.push_back(static_cast<double>(k) * scale.step);
     }
     return scale;
 }
