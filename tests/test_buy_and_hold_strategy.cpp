@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "backtest/backtest_engine.h"
 #include "buy_and_hold_strategy.h"
 

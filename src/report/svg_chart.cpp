@@ -119,15 +119,15 @@ std::string text(double x, double y, const std::string& cls, const std::string& 
 
 std::string line(double x1, double y1, double x2, double y2, const std::string& cls) {
     std::ostringstream out;
-    out << "<line x1=\"" << num(x1) << "\" y1=\"" << num(y1) << "\" x2=\"" << num(x2)
-        << "\" y2=\"" << num(y2) << "\" class=\"" << cls << "\"/>\n";
+    out << "<line x1=\"" << num(x1) << "\" y1=\"" << num(y1) << "\" x2=\"" << num(x2) << "\" y2=\""
+        << num(y2) << "\" class=\"" << cls << "\"/>\n";
     return out.str();
 }
 
 std::string circle(double x, double y, double r, const std::string& cls) {
     std::ostringstream out;
-    out << "<circle cx=\"" << num(x) << "\" cy=\"" << num(y) << "\" r=\"" << num(r)
-        << "\" class=\"" << cls << "\"/>\n";
+    out << "<circle cx=\"" << num(x) << "\" cy=\"" << num(y) << "\" r=\"" << num(r) << "\" class=\""
+        << cls << "\"/>\n";
     return out.str();
 }
 
@@ -212,8 +212,8 @@ std::string legend(const std::vector<LegendItem>& items) {
 }
 
 // Vertical gridlines and tick labels for a horizontal value axis.
-std::string valueAxisX(const NiceScale& scale, double left, double right, double top,
-                       double bottom, ValueFormat format) {
+std::string valueAxisX(const NiceScale& scale, double left, double right, double top, double bottom,
+                       ValueFormat format) {
     std::string out;
     for (double tick : scale.ticks) {
         const double x = project(scale, tick, left, right);
@@ -391,10 +391,12 @@ std::string renderLineChart(const LineChart& chart) {
     // Benchmark lines first so the strategies draw on top
     std::vector<const LineSeries*> order;
     for (const auto& s : chart.series) {
-        if (s.color == SeriesColor::Benchmark) order.push_back(&s);
+        if (s.color == SeriesColor::Benchmark)
+            order.push_back(&s);
     }
     for (const auto& s : chart.series) {
-        if (s.color != SeriesColor::Benchmark) order.push_back(&s);
+        if (s.color != SeriesColor::Benchmark)
+            order.push_back(&s);
     }
     for (const LineSeries* s : order) {
         out << "<polyline class=\"line c" << colorKey(s->color) << "\" points=\"";
@@ -557,7 +559,7 @@ std::string renderDumbbellChart(const DumbbellChart& chart) {
     std::ostringstream out;
     out << header(height, chart.title, chart.subtitle)
         << legend({{chart.fromLabel, "glyphStroke", LegendGlyph::HollowDot},
-                    {chart.toLabel, "glyph", LegendGlyph::Dot}})
+                   {chart.toLabel, "glyph", LegendGlyph::Dot}})
         << valueAxisX(scale, left, right, top, bottom, chart.format)
         << line(x(0.0), top, x(0.0), bottom, "axis");
 
@@ -575,8 +577,8 @@ std::string renderDumbbellChart(const DumbbellChart& chart) {
         const bool rising = row.to >= row.from;
         out << text(fromX + (rising ? -12 : 12), rowY + 4, "ink2",
                     formatValue(row.from, chart.format), rising ? "end" : "start")
-            << text(toX + (rising ? 12 : -12), rowY + 4, "ink",
-                    formatValue(row.to, chart.format), rising ? "start" : "end");
+            << text(toX + (rising ? 12 : -12), rowY + 4, "ink", formatValue(row.to, chart.format),
+                    rising ? "start" : "end");
     }
 
     out << "</svg>\n";
@@ -634,7 +636,8 @@ std::string renderStripChart(const StripChart& chart) {
         // Place dots left to right; a dot that would overlap one already placed moves to the
         // nearest free vertical offset (a simple beeswarm).
         std::vector<size_t> byValue(row.values.size());
-        for (size_t i = 0; i < byValue.size(); ++i) byValue[i] = i;
+        for (size_t i = 0; i < byValue.size(); ++i)
+            byValue[i] = i;
         std::sort(byValue.begin(), byValue.end(),
                   [&](size_t a, size_t b) { return row.values[a] < row.values[b]; });
         constexpr double OFFSETS[] = {0, -11, 11, -22, 22};

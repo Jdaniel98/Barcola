@@ -16,9 +16,9 @@ enum class FillTiming {
 
 struct BacktestConfig {
     double initialCapital = 100000.0;
-    double commissionRate = 0.001;   // 0.1% of trade value, charged on entry and on exit
-    double slippageBps = 5.0;        // 5 basis points against us on every fill
-    double positionFraction = 1.0;   // fraction of available cash committed to each entry
+    double commissionRate = 0.001;  // 0.1% of trade value, charged on entry and on exit
+    double slippageBps = 5.0;       // 5 basis points against us on every fill
+    double positionFraction = 1.0;  // fraction of available cash committed to each entry
     // Annual rate earned on idle cash. Also the hurdle for Sharpe and Sortino, so a strategy
     // that sits in cash scores zero instead of being penalised for not trading.
     double riskFreeRate = DEFAULT_RISK_FREE_RATE;

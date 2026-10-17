@@ -52,13 +52,15 @@ std::vector<PriceHistory> loadExactUniverse(const fs::path& dataDir, const std::
     const auto& expectedList = universeSymbols(universe);
     const std::set<std::string> expected(expectedList.begin(), expectedList.end());
     if (found != expected) {
-        std::string message = dataDir.string() + " does not match the pre-registered " +
-                              universe + " universe.";
+        std::string message =
+            dataDir.string() + " does not match the pre-registered " + universe + " universe.";
         for (const auto& s : expected) {
-            if (!found.count(s)) message += " Missing " + s + ".";
+            if (!found.count(s))
+                message += " Missing " + s + ".";
         }
         for (const auto& s : found) {
-            if (!expected.count(s)) message += " Unexpected " + s + ".";
+            if (!expected.count(s))
+                message += " Unexpected " + s + ".";
         }
         throw std::runtime_error(message);
     }
@@ -98,7 +100,8 @@ int select(const fs::path& dataDir, const std::string& universe) {
     for (const auto& family : families()) {
         const Selection selection = chooseByMeanSharpe(family, data);
         std::vector<size_t> order(family.grid.size());
-        for (size_t i = 0; i < order.size(); ++i) order[i] = i;
+        for (size_t i = 0; i < order.size(); ++i)
+            order[i] = i;
         std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {
             return selection.meanSharpe[a] > selection.meanSharpe[b];
         });
@@ -116,8 +119,7 @@ int select(const fs::path& dataDir, const std::string& universe) {
         for (const auto& c : CHOSEN) {
             if (c.universe == universe && c.family == family.name) {
                 std::cout << "\nRecorded in preregistration.h: " << paramLabel(family, c.params)
-                          << (c.params == family.grid[selection.best] ? " (matches)"
-                                                                     : " (DIFFERS)")
+                          << (c.params == family.grid[selection.best] ? " (matches)" : " (DIFFERS)")
                           << "\n";
             }
         }
@@ -128,8 +130,10 @@ int select(const fs::path& dataDir, const std::string& universe) {
 
 std::string verdict(double shareAhead, bool predictFirstAhead) {
     const double predicted = predictFirstAhead ? shareAhead : 1.0 - shareAhead;
-    if (predicted >= CLEAR_RESULT) return "Supported";
-    if (predicted <= 1.0 - CLEAR_RESULT) return "Contradicted";
+    if (predicted >= CLEAR_RESULT)
+        return "Supported";
+    if (predicted <= 1.0 - CLEAR_RESULT)
+        return "Contradicted";
     return "Inconclusive";
 }
 
@@ -184,9 +188,8 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
     const auto printRow = [](const std::string& name, const std::string& params,
                              const std::vector<Row>& rows) {
         const auto field = [&](auto member) {
-            return meanOf(rows, [member](const BacktestResult& r) {
-                return static_cast<double>(r.*member);
-            });
+            return meanOf(
+                rows, [member](const BacktestResult& r) { return static_cast<double>(r.*member); });
         };
         std::cout << "| " << name << " | " << params << " | "
                   << percent(field(&BacktestResult::annualizedReturn)) << " | "
@@ -210,7 +213,8 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
     const std::vector<GapEstimate> gaps = computeBootstrap(sets);
     const auto find = [&](const std::string& first, const std::string& second) {
         for (const auto& g : gaps) {
-            if (g.first == first && g.second == second) return g;
+            if (g.first == first && g.second == second)
+                return g;
         }
         throw std::runtime_error("No comparison of " + first + " with " + second);
     };
@@ -224,8 +228,8 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
     const std::vector<Hypothesis> hypotheses = {
         {"H1", "Mean reversion trails buy-and-hold", fams[0].displayName, "Buy-and-hold", false},
         {"H2", "MA crossover trails buy-and-hold", fams[1].displayName, "Buy-and-hold", false},
-        {"H3", "The trend filter improves mean reversion", fams[2].displayName,
-         fams[0].displayName, true},
+        {"H3", "The trend filter improves mean reversion", fams[2].displayName, fams[0].displayName,
+         true},
         {"H4", "The time stop improves mean reversion", fams[3].displayName, fams[0].displayName,
          true},
     };
@@ -240,18 +244,20 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
               << "|---|---|---|---:|---:|---:|---|\n";
     for (const auto& h : hypotheses) {
         const GapEstimate g = find(h.first, h.second);
-        std::cout << "| " << h.id << " | " << h.claim << " | " << g.first << " minus "
-                  << g.second << " | " << fixed2(g.gap) << " | " << fixed2(g.low) << " to "
-                  << fixed2(g.high) << " | " << percent(g.shareAhead) << " | "
+        std::cout << "| " << h.id << " | " << h.claim << " | " << g.first << " minus " << g.second
+                  << " | " << fixed2(g.gap) << " | " << fixed2(g.low) << " to " << fixed2(g.high)
+                  << " | " << percent(g.shareAhead) << " | "
                   << verdict(g.shareAhead, h.predictFirstAhead) << " |\n";
     }
     printBootstrap("All comparisons (exploratory beyond H1-H4)", sets);
 
     // Per-symbol Sharpe ratios
     std::cout << "\n## Sharpe ratio by symbol\n\n| Symbol |";
-    for (const auto& family : fams) std::cout << " " << family.shortName << " |";
+    for (const auto& family : fams)
+        std::cout << " " << family.shortName << " |";
     std::cout << " B&H |\n|---|";
-    for (size_t f = 0; f <= fams.size(); ++f) std::cout << "---:|";
+    for (size_t f = 0; f <= fams.size(); ++f)
+        std::cout << "---:|";
     std::cout << "\n";
     for (size_t s = 0; s < histories.size(); ++s) {
         std::cout << "| " << histories[s].getAssetSymbol() << " |";
@@ -263,7 +269,8 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
 
     // Outputs: metrics summary and a growth chart of the averaged accounts
     std::vector<Row> summary;
-    for (const auto& rows : rowsByStrategy) summary.insert(summary.end(), rows.begin(), rows.end());
+    for (const auto& rows : rowsByStrategy)
+        summary.insert(summary.end(), rows.begin(), rows.end());
     summary.insert(summary.end(), holdRows.begin(), holdRows.end());
     writeSummaryCsv(resultsDir / "summary.csv", summary);
 

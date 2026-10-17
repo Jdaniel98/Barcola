@@ -69,10 +69,8 @@ std::string convertEpochToDate(time_t epoch) {
     }
 
     char buffer[32];  // "YYYY-MM-DD\0" with headroom for GCC format-truncation warning
-    std::snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d",
-                  timeInfo.tm_year + 1900,
-                  timeInfo.tm_mon + 1,
-                  timeInfo.tm_mday);
+    std::snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d", timeInfo.tm_year + 1900,
+                  timeInfo.tm_mon + 1, timeInfo.tm_mday);
     return std::string(buffer);
 }
 

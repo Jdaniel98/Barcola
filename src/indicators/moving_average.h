@@ -38,7 +38,6 @@ private:
 };
 
 // Prints SMA/EMA for each data point in the history
-void printMovingAverages(const PriceHistory& history, size_t windowSize,
-                         double emaSmoothingFactor);
+void printMovingAverages(const PriceHistory& history, size_t windowSize, double emaSmoothingFactor);
 
 }  // namespace barcola

@@ -85,8 +85,7 @@ struct ReturnSet {
 WindowData sliceWindow(const PriceHistory& history, const Window& window);
 
 // costMultiplier scales both commission and slippage, for the cost-sensitivity check.
-BacktestResult runStrategy(Strategy& strategy, const WindowData& data,
-                           double costMultiplier = 1.0);
+BacktestResult runStrategy(Strategy& strategy, const WindowData& data, double costMultiplier = 1.0);
 
 std::string paramLabel(const Family& family, const Params& params);
 

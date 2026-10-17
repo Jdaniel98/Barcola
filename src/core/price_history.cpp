@@ -258,8 +258,8 @@ void PriceHistory::addDataPoint(const PricePoint& point) {
 
 std::string PriceHistory::fetchYahooCsvData(time_t startTime, time_t endTime,
                                             const std::string& interval) const {
-    const std::string url = "https://query1.finance.yahoo.com/v7/finance/download/" +
-                            assetSymbol_ + "?period1=" + std::to_string(startTime) +
+    const std::string url = "https://query1.finance.yahoo.com/v7/finance/download/" + assetSymbol_ +
+                            "?period1=" + std::to_string(startTime) +
                             "&period2=" + std::to_string(endTime) + "&interval=" + interval +
                             "&events=history";
 
@@ -277,16 +277,15 @@ std::string PriceHistory::fetchYahooCsvData(time_t startTime, time_t endTime,
 
     const CURLcode result = curl_easy_perform(curl.get());
     if (result != CURLE_OK) {
-        throw std::runtime_error(std::string("CURL request failed: ") +
-                                 curl_easy_strerror(result));
+        throw std::runtime_error(std::string("CURL request failed: ") + curl_easy_strerror(result));
     }
 
     // FIX: an error page used to be parsed as CSV and silently produced zero rows
     long status = 0;
     curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &status);
     if (status != HTTP_OK) {
-        throw std::runtime_error("Yahoo Finance returned HTTP " + std::to_string(status) +
-                                 " for " + assetSymbol_ +
+        throw std::runtime_error("Yahoo Finance returned HTTP " + std::to_string(status) + " for " +
+                                 assetSymbol_ +
                                  ". The v7 download endpoint may require authentication; "
                                  "save the data as CSV and use loadFromCsv instead.");
     }

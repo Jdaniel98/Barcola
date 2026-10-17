@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "risk/dynamic_hedging.h"
 
 using namespace barcola;

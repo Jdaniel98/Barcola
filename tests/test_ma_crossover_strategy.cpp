@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "backtest/backtest_engine.h"
 #include "core/time_utils.h"
 #include "ma_crossover_strategy.h"
@@ -59,8 +60,10 @@ TEST(MACrossoverStrategyTest, Backtest_FollowsTrendAndExits) {
     // Rise for 10 days, then fall for 10. MA(2) vs MA(4): long during the rise, out once the
     // short average drops below the long one.
     std::vector<double> closes;
-    for (int i = 1; i <= 10; ++i) closes.push_back(100.0 + i);
-    for (int i = 1; i <= 10; ++i) closes.push_back(110.0 - 2.0 * i);
+    for (int i = 1; i <= 10; ++i)
+        closes.push_back(100.0 + i);
+    for (int i = 1; i <= 10; ++i)
+        closes.push_back(110.0 - 2.0 * i);
     PriceHistory data("TEST");
     for (const auto& point : makePrices(closes)) {
         data.addDataPoint(point);

@@ -12,7 +12,6 @@ namespace barcola {
 // Returns std::nullopt with fewer than period + 1 prices. Returns 100 when there are gains but
 // no losses, 0 when there are losses but no gains, and 50 when prices never move.
 // Throws std::invalid_argument if period is 0.
-[[nodiscard]] std::optional<double> calculateRSI(const std::vector<double>& prices,
-                                                 size_t period);
+[[nodiscard]] std::optional<double> calculateRSI(const std::vector<double>& prices, size_t period);
 
 }  // namespace barcola

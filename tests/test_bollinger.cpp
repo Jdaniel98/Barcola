@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
+
 #include <cmath>
-#include "indicators/bollinger_bands.h"
+
 #include "core/price_history.h"
+#include "indicators/bollinger_bands.h"
 
 using namespace barcola;
 

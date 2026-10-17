@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "analysis/correlation.h"
 
 using namespace barcola;
@@ -60,9 +61,8 @@ TEST(CorrelationTest, TrendingAssets_CorrelateOnReturnsNotLevels) {
     // Regression: both series trend up, so their price levels correlate strongly, but their
     // daily moves are opposite (A: +3, -1, ... and B: -1, +3, ...).
     // Levels correlate at about 0.61, returns at about -1.
-    const std::vector<std::string> dates = {"2023-01-02", "2023-01-03", "2023-01-04",
-                                            "2023-01-05", "2023-01-06", "2023-01-09",
-                                            "2023-01-10"};
+    const std::vector<std::string> dates = {"2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05",
+                                            "2023-01-06", "2023-01-09", "2023-01-10"};
     const PriceHistory a = makeHistory(dates, {100, 103, 102, 105, 104, 107, 106});
     const PriceHistory b = makeHistory(dates, {100, 99, 102, 101, 104, 103, 106});
 
@@ -76,9 +76,9 @@ TEST(CorrelationTest, MissingDay_AlignedByDate) {
     const PriceHistory a = makeHistory(
         {"2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05", "2023-01-06", "2023-01-09"},
         {100, 103, 99, 104, 101, 106});
-    const PriceHistory b = makeHistory(
-        {"2023-01-02", "2023-01-03", "2023-01-05", "2023-01-06", "2023-01-09"},
-        {100, 103, 104, 101, 106});
+    const PriceHistory b =
+        makeHistory({"2023-01-02", "2023-01-03", "2023-01-05", "2023-01-06", "2023-01-09"},
+                    {100, 103, 104, 101, 106});
 
     EXPECT_NEAR(CorrelationAnalysis(a, b).calculateCorrelation(), 1.0, 1e-12);
 }

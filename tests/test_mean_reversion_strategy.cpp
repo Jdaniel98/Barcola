@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
+
 #include "backtest/strategy.h"
-#include "mean_reversion_strategy.h"
 #include "core/price_point.h"
+#include "mean_reversion_strategy.h"
 
 using namespace barcola;
 
@@ -11,9 +12,8 @@ static std::vector<PricePoint> makePrices(const std::vector<double>& closes) {
     pts.reserve(closes.size());
     for (size_t i = 0; i < closes.size(); ++i) {
         // Date doesn't matter for signal logic; use sequential dates
-        std::string date = std::string("2023-01-") +
-                           (i + 1 < 10 ? "0" : "") +
-                           std::to_string(i + 1);
+        std::string date =
+            std::string("2023-01-") + (i + 1 < 10 ? "0" : "") + std::to_string(i + 1);
         pts.emplace_back(date, closes[i]);
     }
     return pts;
@@ -26,8 +26,10 @@ static std::vector<Signal> walk(Strategy& strategy, const std::vector<PricePoint
     Position position = Position::FLAT;
     for (size_t i = 0; i < prices.size(); ++i) {
         const Signal signal = strategy.evaluate(BarView(prices, i + 1), position);
-        if (signal == Signal::BUY && position == Position::FLAT) position = Position::LONG;
-        if (signal == Signal::SELL && position == Position::LONG) position = Position::FLAT;
+        if (signal == Signal::BUY && position == Position::FLAT)
+            position = Position::LONG;
+        if (signal == Signal::SELL && position == Position::LONG)
+            position = Position::FLAT;
         signals.push_back(signal);
     }
     return signals;
@@ -100,8 +102,10 @@ TEST(MeanReversionStrategyTest, BuyThenRevert_TriggersSell) {
     bool boughtSomewhere = false;
     bool soldSomewhere = false;
     for (Signal signal : walk(strategy, prices)) {
-        if (signal == Signal::BUY) boughtSomewhere = true;
-        if (signal == Signal::SELL) soldSomewhere = true;
+        if (signal == Signal::BUY)
+            boughtSomewhere = true;
+        if (signal == Signal::SELL)
+            soldSomewhere = true;
     }
 
     EXPECT_TRUE(boughtSomewhere);
@@ -118,7 +122,8 @@ TEST(MeanReversionStrategyTest, NoDuplicateBuys) {
 
     int buyCount = 0;
     for (Signal signal : walk(strategy, prices)) {
-        if (signal == Signal::BUY) buyCount++;
+        if (signal == Signal::BUY)
+            buyCount++;
     }
 
     EXPECT_EQ(buyCount, 1);
@@ -136,7 +141,8 @@ TEST(MeanReversionStrategyTest, InvalidParameters_Throw) {
 TEST(MeanReversionStrategyTest, TrendFilter_BlocksDipInDowntrend) {
     // Steady fall from 100 to 71, then a sharp drop to 60: a dip, but below the 20-bar trend
     std::vector<double> closes;
-    for (int i = 0; i < 30; ++i) closes.push_back(100.0 - i);
+    for (int i = 0; i < 30; ++i)
+        closes.push_back(100.0 - i);
     closes.push_back(60.0);
     auto prices = makePrices(closes);
     const BarView bars(prices, prices.size());
@@ -150,7 +156,8 @@ TEST(MeanReversionStrategyTest, TrendFilter_BlocksDipInDowntrend) {
 TEST(MeanReversionStrategyTest, TrendFilter_AllowsDipInUptrend) {
     // Steady rise from 100 to 129, then a drop to 124: still above the 20-bar trend
     std::vector<double> closes;
-    for (int i = 0; i < 30; ++i) closes.push_back(100.0 + i);
+    for (int i = 0; i < 30; ++i)
+        closes.push_back(100.0 + i);
     closes.push_back(124.0);
     auto prices = makePrices(closes);
 
@@ -170,7 +177,8 @@ TEST(MeanReversionStrategyTest, TrendFilter_WaitsForFullTrendWindow) {
 static std::vector<double> dropWithoutReversion() {
     std::vector<double> closes(10, 100.0);
     closes.push_back(85.0);
-    for (int i = 0; i < 5; ++i) closes.push_back(84.0);
+    for (int i = 0; i < 5; ++i)
+        closes.push_back(84.0);
     return closes;
 }
 
