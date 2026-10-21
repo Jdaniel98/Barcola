@@ -9,7 +9,7 @@ on real market data, with verified math, professional engineering, and documente
 - `src/core/` — Foundational types: PricePoint, PriceHistory, time utilities
 - `src/indicators/` — Technical indicators: SMA, EMA, RSI, Bollinger Bands
 - `src/analysis/` — Market analysis: mean reversion, correlation, market data analysis
-- `src/risk/` — Risk management: position sizing, slippage modeling, dynamic hedging
+- `src/risk/` — Risk management: position sizing, slippage modeling
 - `src/simulation/` — Monte Carlo simulation
 - `src/backtest/` — (Phase 2) Backtesting engine, strategy interface, performance metrics
 - `src/report/` — (Phase 5) SVG charts for the write-ups, light and dark themes

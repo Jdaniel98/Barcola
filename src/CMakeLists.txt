@@ -11,7 +11,6 @@ add_library(barcola STATIC
     analysis/bootstrap.cpp
     risk/position_sizing.cpp
     risk/slippage_model.cpp
-    risk/dynamic_hedging.cpp
     simulation/monte_carlo.cpp
     backtest/performance.cpp
     backtest/backtest_engine.cpp
