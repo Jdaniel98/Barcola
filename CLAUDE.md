@@ -46,7 +46,7 @@ scripts before committing.
   polymorphism or heap allocation is genuinely needed.
 - **Const correctness.** All getters are `const`. Pass by `const&` unless mutation is needed.
   Prefer `const` local variables.
-- **RAII everywhere.** Resources (CURL handles, file handles) are managed by constructors/
+- **RAII everywhere.** Resources (file handles and the like) are managed by constructors/
   destructors or scope guards, never manual cleanup.
 - **No `using namespace std;` in headers.** Allowed in .cpp files at function scope only.
 - **`#pragma once`** for all headers.
@@ -81,7 +81,7 @@ scripts before committing.
 
 ## What NOT to Do
 - Do not add external trading libraries. Everything is built from scratch.
-- Do not depend on Yahoo Finance API for tests or CI. Use CSV files.
+- Tests and CI never touch the network. Use the CSV fixtures in `data/`.
 - Do not optimize prematurely. Correctness first, then clarity, then performance.
 - Do not add features from later phases during Phase 1.
 

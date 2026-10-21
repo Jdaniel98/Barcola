@@ -18,4 +18,4 @@ add_library(barcola STATIC
 )
 
 target_include_directories(barcola PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(barcola PUBLIC CURL::libcurl PRIVATE barcola_warnings)
+target_link_libraries(barcola PRIVATE barcola_warnings)
