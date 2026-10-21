@@ -6,6 +6,8 @@ A quantitative trading toolkit written from scratch in C++17, used to answer one
 
 **No.** On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs, buying dips fell well short of holding and following trends came close. A robustness study then checked those results against chance, against re-choosing parameters every year, and on 29 Dow stocks picked without hindsight. It confirmed that buying dips loses. Trend following's near-tie turned out to depend on the six hand-picked stocks: on the Dow, and in every year of the walk-forward test, it trailed holding as well. Finally, a pre-registered test on 21 months of data no study had seen (2025–2026) agreed: every strategy trailed holding, and neither proposed fix for buying dips helped reliably.
 
+> **Research only.** These results describe historical backtests. They are not investment advice or a recommendation to buy or sell any security.
+
 ![Growth of $100,000 in each strategy, 2020–2024](results/charts/growth.svg)
 
 | 2020–2024, out of sample, average of 6 symbols | CAGR | Sharpe | Max drawdown | Time in market |
@@ -86,7 +88,7 @@ build/apps/strategy_study data/dow30 results/dow30 "29 Dow stocks as of 2014" > 
 
 Each run prints every table in the write-ups and redraws the charts in its `charts/` folder. A rerun reproduces the committed results exactly. Tiingo's terms restrict redistributing its prices, so the downloaded data and the outputs that contain prices (trades and daily equity) are kept out of git.
 
-**Requirements:** a C++17 compiler, CMake 3.16+ and libcurl. The download script needs curl and python3.
+**Requirements:** a C++17 compiler and CMake 3.16+. The download script needs curl and python3.
 
 ### Running the CI checks locally
 
@@ -109,7 +111,7 @@ gcovr --filter src/ --filter strategies/ --object-directory build-cov --merge-mo
 
 | Module | What it does |
 |---|---|
-| **Core** | Daily bars kept in date order; CSV import and export with split and dividend adjustment; Yahoo Finance download; date utilities |
+| **Core** | Daily bars kept in date order; CSV import and export with split and dividend adjustment; date utilities |
 | **Indicators** | Simple and exponential moving averages, Wilder's RSI, Bollinger Bands |
 | **Analysis** | Deviation from a moving average, return correlation between assets (aligned by date), annualized volatility, block bootstrap |
 | **Risk** | Stop-based position sizing with a leverage cap, a volatility-based slippage model |
@@ -177,11 +179,11 @@ msft.loadFromCsv("data/MSFT_2023_sample.csv");
 double correlation = CorrelationAnalysis(aapl, msft).calculateCorrelation();
 ```
 
-CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`). When an `Adj Close` column is present, all four prices are scaled by `Adj Close / Close`. Each load replaces any bars already loaded, rows are sorted by date, and duplicate dates or malformed numbers raise an error naming the file and line. `fetchHistoricalData` downloads from Yahoo Finance, but Yahoo now restricts that endpoint, so expect an HTTP error and prefer CSV files.
+CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`). When an `Adj Close` column is present, all four prices are scaled by `Adj Close / Close`. Each load replaces any bars already loaded, rows are sorted by date, and duplicate dates or malformed numbers raise an error naming the file and line.
 
 ## Engineering
 
-- **220 tests in 21 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
+- **214 tests in 20 programs** (Google Test), run in CI on Ubuntu and macOS. Every bug fix comes with a regression test.
 - **Strict checks on every push.** Any compiler warning fails the build (`-Wall -Wextra -Wpedantic -Wshadow -Wconversion`). CI also runs the tests under AddressSanitizer and UndefinedBehaviorSanitizer, checks formatting (clang-format) and lint (a focused clang-tidy set), and measures coverage: the tests run 91% of the lines in the library and strategies.
 - **Known-value tests for the math.** RSI, correlation, volatility, drawdown, annualized return, Bollinger Bands and the backtest's fills and sizing are checked against hand-calculated or independently computed values.
 - **Built to avoid backtest traps.** Strategies cannot see future bars, fills happen the next day, costs apply to every trade, and the engine, not the strategy, is the record of what is held.
