@@ -21,10 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
-
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBARCOLA_WARNINGS_AS_ERRORS=ON
 
@@ -39,9 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
 
       - name: Configure
         run: >
@@ -67,10 +60,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
-          pip install gcovr==8.5
+      - name: Install gcovr
+        run: pip install gcovr==8.5
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBARCOLA_COVERAGE=ON -DBARCOLA_BUILD_APPS=OFF
@@ -125,10 +116,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
-          pip install clang-tidy==18.1.8
+      - name: Install clang-tidy
+        run: pip install clang-tidy==18.1.8
 
       # Configuring is enough: it writes compile_commands.json and fetches GoogleTest
       - name: Configure

@@ -86,7 +86,7 @@ build/apps/strategy_study data/dow30 results/dow30 "29 Dow stocks as of 2014" > 
 
 Each run prints every table in the write-ups and redraws the charts in its `charts/` folder. A rerun reproduces the committed results exactly. Tiingo's terms restrict redistributing its prices, so the downloaded data and the outputs that contain prices (trades and daily equity) are kept out of git.
 
-**Requirements:** a C++17 compiler, CMake 3.16+ and libcurl. The download script needs curl and python3.
+**Requirements:** a C++17 compiler and CMake 3.16+. The download script needs curl and python3.
 
 ### Running the CI checks locally
 
@@ -109,7 +109,7 @@ gcovr --filter src/ --filter strategies/ --object-directory build-cov --merge-mo
 
 | Module | What it does |
 |---|---|
-| **Core** | Daily bars kept in date order; CSV import and export with split and dividend adjustment; Yahoo Finance download; date utilities |
+| **Core** | Daily bars kept in date order; CSV import and export with split and dividend adjustment; date utilities |
 | **Indicators** | Simple and exponential moving averages, Wilder's RSI, Bollinger Bands |
 | **Analysis** | Deviation from a moving average, return correlation between assets (aligned by date), annualized volatility, block bootstrap |
 | **Risk** | Stop-based position sizing with a leverage cap, a volatility-based slippage model |
@@ -177,7 +177,7 @@ msft.loadFromCsv("data/MSFT_2023_sample.csv");
 double correlation = CorrelationAnalysis(aapl, msft).calculateCorrelation();
 ```
 
-CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`). When an `Adj Close` column is present, all four prices are scaled by `Adj Close / Close`. Each load replaces any bars already loaded, rows are sorted by date, and duplicate dates or malformed numbers raise an error naming the file and line. `fetchHistoricalData` downloads from Yahoo Finance, but Yahoo now restricts that endpoint, so expect an HTTP error and prefer CSV files.
+CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`). When an `Adj Close` column is present, all four prices are scaled by `Adj Close / Close`. Each load replaces any bars already loaded, rows are sorted by date, and duplicate dates or malformed numbers raise an error naming the file and line.
 
 ## Engineering
 
