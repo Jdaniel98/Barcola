@@ -94,3 +94,5 @@ Phase 5: Polish, visualizations, README rewrite
 Phase 6: Robustness (bootstrap intervals, walk-forward, cost sensitivity, Dow 30 universe)
 Phase 7: Pre-registered test on fresh data (2025-01 to 2026-09)
 Phase 8: Release polish (license, stricter CI, v1.0)
+Phase 9: Cleanup, security hardening, floating-point determinism
+Phase 10: Performance (optional; only on measured evidence)
