@@ -9,7 +9,7 @@ on real market data, with verified math, professional engineering, and documente
 - `src/core/` — Foundational types: PricePoint, PriceHistory, time utilities
 - `src/indicators/` — Technical indicators: SMA, EMA, RSI, Bollinger Bands
 - `src/analysis/` — Market analysis: mean reversion, correlation, market data analysis
-- `src/risk/` — Risk management: position sizing, slippage modeling, dynamic hedging
+- `src/risk/` — Risk management: position sizing, slippage modeling
 - `src/simulation/` — Monte Carlo simulation
 - `src/backtest/` — (Phase 2) Backtesting engine, strategy interface, performance metrics
 - `src/report/` — (Phase 5) SVG charts for the write-ups, light and dark themes
@@ -46,7 +46,7 @@ scripts before committing.
   polymorphism or heap allocation is genuinely needed.
 - **Const correctness.** All getters are `const`. Pass by `const&` unless mutation is needed.
   Prefer `const` local variables.
-- **RAII everywhere.** Resources (CURL handles, file handles) are managed by constructors/
+- **RAII everywhere.** Resources (file handles and the like) are managed by constructors/
   destructors or scope guards, never manual cleanup.
 - **No `using namespace std;` in headers.** Allowed in .cpp files at function scope only.
 - **`#pragma once`** for all headers.
@@ -81,7 +81,7 @@ scripts before committing.
 
 ## What NOT to Do
 - Do not add external trading libraries. Everything is built from scratch.
-- Do not depend on Yahoo Finance API for tests or CI. Use CSV files.
+- Tests and CI never touch the network. Use the CSV fixtures in `data/`.
 - Do not optimize prematurely. Correctness first, then clarity, then performance.
 - Do not add features from later phases during Phase 1.
 
@@ -94,3 +94,5 @@ Phase 5: Polish, visualizations, README rewrite
 Phase 6: Robustness (bootstrap intervals, walk-forward, cost sensitivity, Dow 30 universe)
 Phase 7: Pre-registered test on fresh data (2025-01 to 2026-09)
 Phase 8: Release polish (license, stricter CI, v1.0)
+Phase 9: Cleanup, security hardening, floating-point determinism
+Phase 10: Performance (optional; only on measured evidence)

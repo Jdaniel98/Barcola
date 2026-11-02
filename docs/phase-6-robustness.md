@@ -1,5 +1,7 @@
 # Phase 6: How Robust Are the Results?
 
+> **Research only.** These results describe historical backtests. They are not investment advice or a recommendation to buy or sell any security.
+
 **Question.** Phases 3 and 4 rested on one split of the data (choose on 2014–2019, test on 2020–2024), six hand-picked symbols and one level of trading costs. Which of their conclusions survive chance, re-choosing parameters every year, higher costs, and a universe picked without hindsight?
 
 **Answer.**

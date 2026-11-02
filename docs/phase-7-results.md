@@ -1,5 +1,7 @@
 # Phase 7 Results: The Pre-registered Test on Fresh Data
 
+> **Research only.** These results describe historical backtests. They are not investment advice or a recommendation to buy or sell any security.
+
 **Question.** Phases 3–6 all used 2014–2024 data. On 21 months none of them had seen, January 2025 to September 2026, do the earlier conclusions hold? And do the two refinements they suggested, a trend filter and a time stop, actually improve mean reversion?
 
 **Answer.**
