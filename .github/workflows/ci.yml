@@ -148,10 +148,12 @@ jobs:
 
       # New inputs go to corpus/; data/ and tests/fuzz/seeds/ seed it. -max_total_time can't
       # interrupt a hanging input, so -timeout fails one well before libFuzzer's 20-minute default.
+      # libFuzzer sizes inputs from its largest seed; -max_len stops data/golden's 180 KB files
+      # from slowing every run.
       - name: Fuzz for 60 seconds
         run: |
           mkdir corpus
-          build/tests/fuzz/fuzz_load_csv -max_total_time=60 -timeout=30 corpus/ data/ tests/fuzz/seeds/
+          build/tests/fuzz/fuzz_load_csv -max_total_time=60 -timeout=30 -max_len=4096 corpus/ data/ tests/fuzz/seeds/
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
