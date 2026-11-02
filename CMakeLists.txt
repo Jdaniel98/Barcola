@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BARCOLA_WARNINGS_AS_ERRORS "Treat compiler warnings in Barcola's code as errors" OFF)
 option(BARCOLA_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(BARCOLA_COVERAGE "Instrument the build for gcov test coverage" OFF)
+option(BARCOLA_FUZZ "Build the libFuzzer target in tests/fuzz (needs LLVM Clang)" OFF)
 
 # Everything is instrumented, so sanitizer and coverage builds also cover GoogleTest's
 # code paths; any undefined behavior aborts the test that triggered it.
@@ -42,4 +43,12 @@ option(BARCOLA_BUILD_TESTS "Build tests" ON)
 if(BARCOLA_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(BARCOLA_FUZZ)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "BARCOLA_FUZZ needs LLVM Clang, which includes libFuzzer; found "
+                            "${CMAKE_CXX_COMPILER_ID}. Apple clang does not include it.")
+    endif()
+    add_subdirectory(tests/fuzz)
 endif()
