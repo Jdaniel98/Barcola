@@ -55,3 +55,11 @@ data/dow30/
 
 # Phase 7 fresh test data (2025 onward), also from Tiingo
 data/fresh/
+
+# libFuzzer's output. A local corpus can hold fragments of any data it was seeded with,
+# including the Tiingo prices above.
+/corpus/
+/crash-*
+/leak-*
+/oom-*
+/timeout-*

@@ -139,16 +139,19 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBARCOLA_FUZZ=ON -DBARCOLA_BUILD_APPS=OFF
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBARCOLA_FUZZ=ON
+          -DBARCOLA_WARNINGS_AS_ERRORS=ON -DBARCOLA_BUILD_APPS=OFF -DBARCOLA_BUILD_TESTS=OFF
 
       - name: Build
         run: cmake --build build --target fuzz_load_csv --parallel
 
-      # New inputs go to corpus/; data/ seeds it with the committed CSV fixtures
+      # New inputs go to corpus/; data/ and tests/fuzz/seeds/ seed it. -max_total_time can't
+      # interrupt a hanging input, so -timeout fails one well before libFuzzer's 20-minute default.
       - name: Fuzz for 60 seconds
         run: |
           mkdir corpus
-          build/tests/fuzz/fuzz_load_csv -max_total_time=60 corpus/ data/
+          build/tests/fuzz/fuzz_load_csv -max_total_time=60 -timeout=30 corpus/ data/ tests/fuzz/seeds/
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
