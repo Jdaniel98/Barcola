@@ -1,13 +1,10 @@
 #include "core/price_history.h"
 
-#include <curl/curl.h>
-
 #include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -17,19 +14,6 @@
 namespace barcola {
 
 namespace {
-
-constexpr long HTTP_OK = 200;
-constexpr long CURL_TIMEOUT_SECONDS = 30;
-
-size_t onDataReceived(char* data, size_t size, size_t nmemb, void* userData) {
-    static_cast<std::string*>(userData)->append(data, size * nmemb);
-    return size * nmemb;
-}
-
-struct CurlDeleter {
-    void operator()(CURL* handle) const { curl_easy_cleanup(handle); }
-};
-using CurlHandle = std::unique_ptr<CURL, CurlDeleter>;
 
 std::string trim(const std::string& text) {
     const auto isSpace = [](unsigned char c) { return std::isspace(c) != 0; };
@@ -255,60 +239,6 @@ void PriceHistory::addDataPoint(const PricePoint& point) {
 }
 
 // --- Data loading ---
-
-std::string PriceHistory::fetchYahooCsvData(time_t startTime, time_t endTime,
-                                            const std::string& interval) const {
-    const std::string url = "https://query1.finance.yahoo.com/v7/finance/download/" + assetSymbol_ +
-                            "?period1=" + std::to_string(startTime) +
-                            "&period2=" + std::to_string(endTime) + "&interval=" + interval +
-                            "&events=history";
-
-    const CurlHandle curl(curl_easy_init());
-    if (!curl) {
-        throw std::runtime_error("Failed to initialize CURL");
-    }
-
-    std::string responseData;
-    curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, onDataReceived);
-    curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &responseData);
-    curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, CURL_TIMEOUT_SECONDS);
-    curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
-
-    const CURLcode result = curl_easy_perform(curl.get());
-    if (result != CURLE_OK) {
-        throw std::runtime_error(std::string("CURL request failed: ") + curl_easy_strerror(result));
-    }
-
-    // FIX: an error page used to be parsed as CSV and silently produced zero rows
-    long status = 0;
-    curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &status);
-    if (status != HTTP_OK) {
-        throw std::runtime_error("Yahoo Finance returned HTTP " + std::to_string(status) + " for " +
-                                 assetSymbol_ +
-                                 ". The v7 download endpoint may require authentication; "
-                                 "save the data as CSV and use loadFromCsv instead.");
-    }
-
-    return responseData;
-}
-
-void PriceHistory::fetchHistoricalData(time_t startDate, time_t endDate,
-                                       const std::string& interval) {
-    std::istringstream csvStream(fetchYahooCsvData(startDate, endDate, interval));
-    auto points = parseCsv(csvStream, "Yahoo Finance response for " + assetSymbol_);
-    if (points.empty()) {
-        throw std::runtime_error("Yahoo Finance returned no price rows for " + assetSymbol_);
-    }
-    dataPoints_ = std::move(points);
-}
-
-void PriceHistory::fetchHistoricalData(const std::string& startDate, const std::string& endDate,
-                                       const std::string& interval) {
-    const time_t startTimestamp = convertDateToEpoch(startDate);
-    const time_t endTimestamp = convertDateToEpoch(endDate);
-    fetchHistoricalData(startTimestamp, endTimestamp, interval);
-}
 
 void PriceHistory::loadFromCsv(const std::string& filepath) {
     std::ifstream file(filepath);

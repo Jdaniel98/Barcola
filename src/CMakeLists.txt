@@ -11,7 +11,6 @@ add_library(barcola STATIC
     analysis/bootstrap.cpp
     risk/position_sizing.cpp
     risk/slippage_model.cpp
-    risk/dynamic_hedging.cpp
     simulation/monte_carlo.cpp
     backtest/performance.cpp
     backtest/backtest_engine.cpp
@@ -19,4 +18,4 @@ add_library(barcola STATIC
 )
 
 target_include_directories(barcola PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(barcola PUBLIC CURL::libcurl PRIVATE barcola_warnings)
+target_link_libraries(barcola PRIVATE barcola_warnings)

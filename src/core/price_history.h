@@ -28,24 +28,18 @@ public:
     // Appends a bar. Throws std::invalid_argument unless its date is after the last bar's.
     void addDataPoint(const PricePoint& point);
 
-    // Data loading. Both replace any bars already loaded. Columns are found by header name
-    // (Date, Open, High, Low, Close, and optionally Adj Close). When Adj Close is present,
-    // all four prices are scaled by Adj Close / Close so splits and dividends are accounted
-    // for. Rows containing "null" are skipped, and rows are sorted by date.
+    // Loads bars from a CSV file, replacing any bars already loaded. Columns are found by
+    // header name (Date, Open, High, Low, Close, and optionally Adj Close). When Adj Close is
+    // present, all four prices are scaled by Adj Close / Close so splits and dividends are
+    // accounted for. Rows containing "null" are skipped, and rows are sorted by date.
     // Throws std::runtime_error on unreadable input, a missing column, a malformed number or
     // a duplicate date.
-    void fetchHistoricalData(time_t startDate, time_t endDate, const std::string& interval);
-    void fetchHistoricalData(const std::string& startDate, const std::string& endDate,
-                             const std::string& interval);
     void loadFromCsv(const std::string& filepath);
     void saveToCsv(const std::string& filepath) const;
 
 private:
     std::string assetSymbol_;
     std::vector<PricePoint> dataPoints_;
-
-    [[nodiscard]] std::string fetchYahooCsvData(time_t startTime, time_t endTime,
-                                                const std::string& interval) const;
 };
 
 }  // namespace barcola

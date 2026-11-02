@@ -1,5 +1,7 @@
 # Phase 3: Mean Reversion Backtest
 
+> **Research only.** These results describe historical backtests. They are not investment advice or a recommendation to buy or sell any security.
+
 **Question.** On large US stocks, does buying unusually sharp dips and selling once the price recovers beat simply holding the stock, after trading costs and realistic fills?
 
 **Answer: no.** From 2020 to 2024, out of sample, the strategy returned 4.5% a year on average with a Sharpe ratio of 0.30. Buy-and-hold returned 16.7% a year with a Sharpe of 0.67. None of the 32 parameter sets tested beat buy-and-hold out of sample. The strategy's one advantage in 2014–2019, shallower drawdowns, did not hold up.

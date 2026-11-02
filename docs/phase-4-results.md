@@ -1,5 +1,7 @@
 # Phase 4: Moving-Average Crossover vs Mean Reversion
 
+> **Research only.** These results describe historical backtests. They are not investment advice or a recommendation to buy or sell any security.
+
 **Question.** Phase 3 found that buying dips did not beat holding. Does the opposite approach, following trends, do better? And how do the two compare with each other?
 
 **Answer.** Out of sample (2020–2024), trend following did much better than buying dips: 13.9% a year with a Sharpe ratio of 0.65, against 4.5% and 0.30. It came close to buy-and-hold on a risk-adjusted basis (0.65 against 0.67) with smaller drawdowns, but it still earned less, and one stock, XOM, accounts for much of its edge.
