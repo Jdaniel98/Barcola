@@ -34,9 +34,9 @@ def within_one_last_digit(expected, actual):
     if not a.is_finite() or not b.is_finite() or a.is_zero() or b.is_zero():
         return False
     # Printing drops trailing zeros, so 0.5 can stand for 0.5000000000: the last digit is always
-    # the PRINTED_DIGITS-th, whatever the text shows. 0.9999999999 and 1 are one unit apart at
-    # the smaller number's scale and less than one at the larger's, which is the one used here.
-    unit = decimal.Decimal(1).scaleb(max(a.adjusted(), b.adjusted()) - (PRINTED_DIGITS - 1))
+    # the PRINTED_DIGITS-th, whatever the text shows. Across a power of ten, as with 0.9999999999
+    # and 1, the smaller number's digit is the finer one, and the two are one unit of it apart.
+    unit = decimal.Decimal(1).scaleb(min(a.adjusted(), b.adjusted()) - (PRINTED_DIGITS - 1))
     with decimal.localcontext() as context:
         context.prec = 2 * PRINTED_DIGITS
         return abs(a - b) <= unit

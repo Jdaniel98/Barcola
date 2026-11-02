@@ -25,7 +25,8 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel ${CMAKE_BUILD_TYPE}
     list(APPEND barcola_cxx_flag_vars "CMAKE_CXX_FLAGS_${config_upper}")
 endforeach()
 foreach(flag_var IN LISTS barcola_cxx_flag_vars)
-    foreach(flag -ffast-math -Ofast -fassociative-math -funsafe-math-optimizations)
+    foreach(flag -ffast-math -Ofast -fassociative-math -funsafe-math-optimizations
+                 -freciprocal-math -ffinite-math-only -ffp-model=fast)
         string(FIND "${${flag_var}}" "${flag}" flag_position)
         if(NOT flag_position EQUAL -1)
             message(FATAL_ERROR "${flag_var} contains ${flag}, which would make results depend "

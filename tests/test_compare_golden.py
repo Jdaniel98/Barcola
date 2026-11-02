@@ -74,6 +74,11 @@ class CompareGoldenTest(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertEqual(len(warnings), 1)
 
+    def test_cagr_nine_units_across_a_power_of_ten_fails(self):
+        self.write_summary(SUMMARY.replace("0.1234567891", "1"))
+        (self.expected / "summary.csv").write_text(SUMMARY.replace("0.1234567891", "0.9999999991"))
+        self.assertEqual(len(self.compare()[0]), 1)
+
     def test_cagr_zero_against_nonzero_fails(self):
         self.write_summary(SUMMARY.replace("0.1234567891", "1e-10"))
         (self.expected / "summary.csv").write_text(SUMMARY.replace("0.1234567891", "0"))

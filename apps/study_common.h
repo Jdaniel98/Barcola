@@ -176,8 +176,8 @@ struct MarginRow {
 
 class MarginReport {
 public:
-    // Throws std::runtime_error if path is inside results/ or resultsDir, can't be written, or
-    // already holds something other than a margin report.
+    // Throws std::runtime_error if path goes through a folder called results, is inside
+    // resultsDir, can't be written, or already holds something other than a margin report.
     MarginReport(std::string program, const fs::path& path, const fs::path& resultsDir);
 
     void add(MarginRow row);

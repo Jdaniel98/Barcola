@@ -249,6 +249,17 @@ TEST_F(StudyCommonTest, Report_InResultsFolderOfCurrentDirectory_Refused) {
     fs::current_path(original);
 }
 
+TEST_F(StudyCommonTest, Report_ResultsFolderReachedFromElsewhere_Refused) {
+    // Regression: only ./results and the run's own results folder used to be checked
+    const fs::path original = fs::current_path();
+    fs::create_directories(dir_ / "build");
+    fs::current_path(dir_ / "build");
+    EXPECT_THROW(MarginReport("test", "../results/phase7/margins.csv", dir_ / "elsewhere"),
+                 std::runtime_error);
+    fs::current_path(original);
+    EXPECT_FALSE(fs::exists(dir_ / "results"));
+}
+
 TEST_F(StudyCommonTest, Report_SiblingOfResultsFolder_Allowed) {
     const fs::path results = dir_ / "results";
     EXPECT_NO_THROW(MarginReport("test", dir_ / "results_margins.csv", results));

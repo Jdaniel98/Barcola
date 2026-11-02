@@ -8,9 +8,9 @@ All notable changes to Barcola are recorded here. The format is based on [Keep a
 
 - Builds now use `-ffp-contract=off`, so a compiler can't fuse `a*b + c` into a single multiply-add that rounds once instead of twice. Fused instructions were in use on both CI platforms, in the z-score, the Sharpe and Sortino ratios, percentiles and the backtest engine.
 - CMake now refuses `-ffast-math`, `-Ofast`, `-fassociative-math` and `-funsafe-math-optimizations`.
-- The README's reproducibility claim now covers other platforms and states its one exception: CAGR and Calmar use the platform's `pow()`, which can differ in the last digit.
+- The README's reproducibility claim now covers other platforms and states the maths-library exception: CAGR and Calmar use the platform's `pow()`, which can differ in the last digit.
 
-Published results are unchanged: rerunning both study programs on the real data reproduced all 32 output files byte for byte.
+Published results are unchanged: rerunning both study programs on the real data reproduced all 32 output files byte for byte. That rerun was on an Intel Mac, whose builds never used fused instructions, so the flag changes nothing there; a separate build with them forced on reproduced the same 32 files. The real data has not been run on arm64.
 
 ### Added
 
@@ -52,6 +52,7 @@ There was no deprecation release first: Barcola has no known downstream users, a
 - Phase 7: Pre-registered test on fresh 2025–2026 data
 - Phase 8: Release polish: MIT license, stricter CI (warnings as errors, sanitizers, formatting, lint, coverage), v1.0
 
-[Unreleased]: https://github.com/Jdaniel98/Barcola/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/Jdaniel98/Barcola/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/Jdaniel98/Barcola/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/Jdaniel98/Barcola/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/Jdaniel98/Barcola/releases/tag/v1.0.0

@@ -30,6 +30,7 @@ barcola_add_test(test_monte_carlo)
 barcola_add_test(test_csv_io)
 barcola_add_test(test_svg_chart)
 barcola_add_test(test_bootstrap)
+barcola_add_test(test_fp_contraction)
 
 # Phase 2: backtest tests need strategies library too
 function(barcola_add_backtest_test name)
@@ -55,6 +56,19 @@ add_executable(test_study_common test_study_common.cpp ${PROJECT_SOURCE_DIR}/app
 target_link_libraries(test_study_common PRIVATE barcola_strategies barcola_warnings GTest::gtest_main)
 target_include_directories(test_study_common PRIVATE ${PROJECT_SOURCE_DIR}/apps)
 add_test(NAME test_study_common COMMAND test_study_common)
+
+# The top-level CMakeLists.txt refuses flags that relax floating-point arithmetic. Configuring
+# stops before anything is built or downloaded.
+function(barcola_add_refused_flag_test name setting flag)
+    add_test(NAME ${name}
+             COMMAND ${CMAKE_COMMAND} -S ${PROJECT_SOURCE_DIR}
+                     -B ${CMAKE_CURRENT_BINARY_DIR}/${name}
+                     -G ${CMAKE_GENERATOR} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                     -DBARCOLA_BUILD_TESTS=OFF -DBARCOLA_BUILD_APPS=OFF "-D${setting}=${flag}")
+    set_tests_properties(${name} PROPERTIES PASS_REGULAR_EXPRESSION "contains ${flag}")
+endfunction()
+barcola_add_refused_flag_test(refuses_fast_math CMAKE_CXX_FLAGS -ffast-math)
+barcola_add_refused_flag_test(refuses_ofast_in_release CMAKE_CXX_FLAGS_RELEASE -Ofast)
 
 # Golden outputs: both study programs on the synthetic prices in data/golden, compared with the
 # committed outputs in tests/golden. They run again with the margin report on, which must change
