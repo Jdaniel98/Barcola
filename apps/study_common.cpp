@@ -154,6 +154,14 @@ private:
 const char* const MARGIN_COLUMNS =
     "program,window,family,symbol,params,smallest_margin,date,comparison";
 
+// True if a folder on the way to path is called results, following symlinks. This doesn't depend
+// on where the program runs from, so ../results/phase7/margins.csv is caught from anywhere.
+bool passesThroughResultsFolder(const fs::path& path) {
+    const fs::path resolved = fs::weakly_canonical(fs::absolute(path));
+    return std::any_of(resolved.begin(), resolved.end(),
+                       [](const fs::path& part) { return part == "results"; });
+}
+
 // True if path is folder or anything under it, following symlinks.
 bool isInsideFolder(const fs::path& path, const fs::path& folder) {
     const fs::path relative = fs::weakly_canonical(fs::absolute(path))
@@ -216,7 +224,7 @@ BacktestResult runStrategy(Strategy& strategy, const WindowData& data, double co
 
 MarginReport::MarginReport(std::string program, const fs::path& path, const fs::path& resultsDir)
     : program_(std::move(program)), path_(path) {
-    if (isInsideFolder(path, fs::current_path() / "results") || isInsideFolder(path, resultsDir)) {
+    if (passesThroughResultsFolder(path) || isInsideFolder(path, resultsDir)) {
         throw std::runtime_error("The margin report must be outside the results folders: " +
                                  path.string());
     }

@@ -1,6 +1,7 @@
 // Prints every value the strategies' decisions depend on, one per bar, in hexfloat so nothing
 // is lost to rounding. Comparing two builds' output (scripts/compare_decision_values.py) shows
 // how far a compiler setting moves those values, which is how Phase 9c set its threshold.
+// Builds now always turn contraction off, so repeating that needs commit e597149, the last before.
 //
 // Series: each symbol in data_dir, plus a long random walk built from raw mt19937 integers, with
 // no maths-library calls, so the walk itself is the same in every build.

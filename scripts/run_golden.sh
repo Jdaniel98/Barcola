@@ -4,7 +4,8 @@
 # Usage: scripts/run_golden.sh <build_dir> <out_dir>
 #
 # Each program runs from inside <out_dir> with a relative results folder, so the paths it
-# prints are the same wherever the output goes. equity_out_of_sample.csv is deleted: it is
+# prints are the same wherever the output goes. Both results folders are emptied first, so a file
+# the programs stop writing can't survive and pass. equity_out_of_sample.csv is deleted: it is
 # large, and the trades and metrics already cover it.
 set -euo pipefail
 
@@ -15,6 +16,7 @@ fi
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 build_dir="$(cd "$1" && pwd)"
+rm -rf "${2:?}/strategy_study" "${2:?}/fresh_data_test"
 mkdir -p "$2/strategy_study" "$2/fresh_data_test"
 cd "$2"
 
