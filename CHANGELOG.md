@@ -4,6 +4,14 @@ All notable changes to Barcola are recorded here. The format is based on [Keep a
 
 ## [Unreleased]
 
+### Security
+
+- Pinned every GitHub Action and GoogleTest to a full commit SHA, and added Dependabot updates for the action pins.
+- Limited the CI workflow's token to read-only.
+- Added `SECURITY.md` and an OpenSSF Scorecard workflow, which runs once the repository is public.
+- Added a libFuzzer target for `PriceHistory::loadFromCsv`, run for 60 seconds in CI under ASan and UBSan.
+- `scripts/fetch_market_data.sh` now gives curl the Tiingo token on stdin, so it no longer appears on a command line or in a process listing.
+
 ## [2.0.0] - 2026-10-21
 
 ### Removed
