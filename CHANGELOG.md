@@ -2,7 +2,21 @@
 
 All notable changes to Barcola are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.1] - Unreleased
+
+### Changed
+
+- Builds now use `-ffp-contract=off`, so a compiler can't fuse `a*b + c` into a single multiply-add that rounds once instead of twice. Fused instructions were in use on both CI platforms, in the z-score, the Sharpe and Sortino ratios, percentiles and the backtest engine.
+- CMake now refuses `-ffast-math`, `-Ofast`, `-fassociative-math` and `-funsafe-math-optimizations`.
+- The README's reproducibility claim now covers other platforms and states its one exception: CAGR and Calmar use the platform's `pow()`, which can differ in the last digit.
+
+Published results are unchanged: rerunning both study programs on the real data reproduced all 32 output files byte for byte.
+
+### Added
+
+- Golden outputs: both study programs run on committed synthetic prices in `data/golden/`, and CI checks the results against `tests/golden/` on Linux and macOS.
+- A decision-margin report, written when `BARCOLA_MARGIN_REPORT=<path>` is set. It shows how close each run came to deciding the other way on some bar, without changing any result.
+- `apps/decision_values`, which prints the values behind every decision so two builds can be compared.
 
 ### Security
 
