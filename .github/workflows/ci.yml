@@ -164,3 +164,60 @@ jobs:
             leak-*
             oom-*
             timeout-*
+
+  # Temporary, deleted later in this PR: both platforms' outputs with today's flags
+  golden-measure:
+    name: Golden measure (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBARCOLA_BUILD_TESTS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run the golden study
+        run: scripts/run_golden.sh build golden-out
+
+      # grep -c exits 1 on a count of 0, which is a valid answer here
+      - name: Count fused multiply-adds
+        run: |
+          uname -m
+          c++ --version | head -1
+          for lib in build/strategies/libbarcola_strategies.a build/src/libbarcola.a; do
+            echo "$lib: $(objdump -d --no-show-raw-insn "$lib" | grep -c fmadd || true)"
+          done
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: golden-${{ matrix.os }}
+          path: golden-out
+
+  golden-compare:
+    name: Golden measure (compare platforms)
+    needs: golden-measure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+
+      # A measurement, not a gate: differences are the result, so they don't fail the job
+      - name: Compare
+        run: |
+          if diff -r golden-ubuntu-latest golden-macos-latest > golden.diff; then
+            echo "Identical"
+          else
+            diff -rq golden-ubuntu-latest golden-macos-latest || true
+            echo "Lines of diff: $(wc -l < golden.diff)"
+            head -200 golden.diff | cut -c1-200
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: golden-diff
+          path: golden.diff
