@@ -18,8 +18,9 @@
 #
 # Needs a free Tiingo API token (https://www.tiingo.com/account/api/token). The script
 # reads it from TIINGO_API_TOKEN or asks for it without echoing. It reaches curl as a config
-# on stdin, so it never appears on a command line or in a process listing, and it is only
-# sent in the Authorization header and never written to disk. Needs curl and python3.
+# on stdin, which keeps it off the command line, where other users could see it in a process
+# listing. It is only sent in the Authorization header and never written to disk. Needs curl
+# and python3.
 #
 # Output columns are Date,Open,High,Low,Close,Adj Close. PriceHistory::loadFromCsv scales
 # the raw prices by Adj Close / Close, so splits and dividends are accounted for.
@@ -76,6 +77,13 @@ if [ -z "$TIINGO_API_TOKEN" ]; then
     echo "No token entered." >&2
     exit 1
 fi
+# curl's config syntax would silently alter a token containing either of these
+case "$TIINGO_API_TOKEN" in
+    *\"* | *\\*)
+        echo "That doesn't look like a Tiingo token: it contains a quote or a backslash." >&2
+        exit 1
+        ;;
+esac
 
 response="$(mktemp)"
 trap 'rm -f "$response"' EXIT
