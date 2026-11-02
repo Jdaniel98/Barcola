@@ -50,6 +50,9 @@ data/market/
 results/**/trades.csv
 results/**/equity_out_of_sample.csv
 
+# Large, and the golden trades and metrics already cover it
+tests/golden/**/equity_out_of_sample.csv
+
 # Phase 6 universe prices from Tiingo, also not redistributable
 data/dow30/
 
