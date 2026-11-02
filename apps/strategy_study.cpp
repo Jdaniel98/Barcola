@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -669,6 +670,8 @@ int main(int argc, char* argv[]) {
         const fs::path dataDir = argc > 1 ? argv[1] : "data/market";
         const fs::path resultsDir = argc > 2 ? argv[2] : "results";
         const std::string universeLabel = argc > 3 ? argv[3] : "";
+        std::optional<MarginReport> marginReport =
+            marginReportFromEnvironment("strategy_study", resultsDir);
         fs::create_directories(resultsDir);
 
         // Only symbols whose history covers the whole study take part
@@ -706,7 +709,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Each strategy family
-        const std::vector<Family> families = studyFamilies();
+        const std::vector<Family> families =
+            withMarginProbes(studyFamilies(), marginReport ? &*marginReport : nullptr);
         std::vector<FamilyResults> results;
         for (const auto& family : families) {
             results.push_back(studyFamily(family, universe, inSample, outOfSample,
@@ -791,6 +795,9 @@ int main(int argc, char* argv[]) {
                     buyAndHoldIn, buyAndHoldOut);
         writeWalkForwardChart(resultsDir / "charts", families, walkForward, universe.size());
         std::cout << "\nCSV results written to " << resultsDir.string() << "/\n";
+        if (marginReport) {
+            marginReport->write();
+        }
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << "\n";

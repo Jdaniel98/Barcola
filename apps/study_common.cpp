@@ -1,14 +1,21 @@
 #include "study_common.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <limits>
+#include <map>
 #include <random>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 #include "analysis/bootstrap.h"
 #include "core/time_utils.h"
+#include "detail/window_stats.h"
+#include "preregistration.h"
 
 namespace barcola::study {
 
@@ -28,8 +35,172 @@ WindowData sliceWindow(const PriceHistory& history, const Window& window) {
         std::cerr << "warning: " << history.getAssetSymbol() << " has only " << warmup
                   << " warm-up bars before " << window.start << "\n";
     }
-    return {history.between(points[windowIndex - warmup].getDate(), end), warmup};
+    return {history.between(points[windowIndex - warmup].getDate(), end), warmup, window.name};
 }
+
+namespace {
+
+// The comparisons a family's strategy makes, from the run's parameters. Mean reversion when
+// lookback is set, otherwise the crossover. Time stops compare whole bars, so they have no margin.
+struct MarginRule {
+    size_t lookback = 0;
+    double entryZ = 0.0;
+    double exitZ = 0.0;
+    size_t trendWindow = 0;
+    size_t shortWindow = 0;
+    size_t longWindow = 0;
+};
+
+MarginRule marginRuleFor(const std::string& family, const Params& params) {
+    MarginRule rule;
+    if (family == "MACrossover") {
+        rule.shortWindow = static_cast<size_t>(params[0]);
+        rule.longWindow = static_cast<size_t>(params[1]);
+    } else if (family == "MeanReversion" || family == "MeanReversionTrend" ||
+               family == "MeanReversionTimeStop") {
+        rule.lookback = static_cast<size_t>(params[0]);
+        rule.entryZ = params[1];
+        rule.exitZ = params[2];
+        if (family == "MeanReversionTrend") {
+            rule.trendWindow = phase7::TREND_WINDOW;
+        }
+    } else {
+        throw std::runtime_error("No margin rule for the strategy family " + family);
+    }
+    return rule;
+}
+
+// Wraps a strategy and records its closest decision in each run. It computes the same values
+// from the same window_stats.h expressions, and always returns the wrapped strategy's signal.
+class MarginProbe final : public Strategy {
+public:
+    MarginProbe(std::unique_ptr<Strategy> inner, const MarginRule& rule, MarginReport& report,
+                std::string family, std::string params)
+        : inner_(std::move(inner)), rule_(rule), report_(report) {
+        row_.program = report.program();
+        row_.family = std::move(family);
+        row_.params = std::move(params);
+    }
+
+    void startRun(const std::string& window, const std::string& symbol) {
+        row_.window = window;
+        row_.symbol = symbol;
+        row_.margin = std::numeric_limits<double>::infinity();
+    }
+
+    void finishRun() {
+        // Still infinite means no comparison ran, so there was no decision to flip
+        if (std::isfinite(row_.margin)) {
+            report_.add(row_);
+        }
+    }
+
+    void reset() override { inner_->reset(); }
+
+    Signal evaluate(const BarView& bars, Position position) override {
+        if (rule_.lookback > 0) {
+            recordMeanReversion(bars, position);
+        } else {
+            recordCrossover(bars);
+        }
+        return inner_->evaluate(bars, position);
+    }
+
+    [[nodiscard]] std::string name() const override { return inner_->name(); }
+
+private:
+    void note(double margin, const BarView& bars, const char* comparison) {
+        if (margin < row_.margin) {
+            row_.margin = margin;
+            row_.date = bars.back().getDateString();
+            row_.comparison = comparison;
+        }
+    }
+
+    // Mirrors MeanReversionStrategy::evaluate: the same guard, and each comparison only on the
+    // bars where the strategy makes it.
+    void recordMeanReversion(const BarView& bars, Position position) {
+        if (bars.size() <= std::max(rule_.lookback, rule_.trendWindow)) {
+            return;
+        }
+        const double z = detail::zScore(bars, rule_.lookback);
+        if (position == Position::LONG) {
+            note(std::abs(z - rule_.exitZ), bars, "exit_z");
+            return;
+        }
+        note(std::abs(z - (-rule_.entryZ)), bars, "entry_z");
+        if (z < -rule_.entryZ && rule_.trendWindow > 0) {
+            const double trend = detail::trailingMean(bars, rule_.trendWindow);
+            note(std::abs(detail::relativeGap(bars.back().getClosing(), trend)), bars, "trend");
+        }
+    }
+
+    // Mirrors MovingAverageCrossoverStrategy::evaluate
+    void recordCrossover(const BarView& bars) {
+        if (bars.size() < rule_.longWindow) {
+            return;
+        }
+        const double shortMA = detail::trailingMean(bars, rule_.shortWindow);
+        const double longMA = detail::trailingMean(bars, rule_.longWindow);
+        note(std::abs(detail::relativeGap(shortMA, longMA)), bars, "crossover");
+    }
+
+    std::unique_ptr<Strategy> inner_;
+    MarginRule rule_;
+    MarginReport& report_;
+    MarginRow row_;
+};
+
+const char* const MARGIN_COLUMNS =
+    "program,window,family,symbol,params,smallest_margin,date,comparison";
+
+// True if a folder on the way to path is called results, following symlinks. This doesn't depend
+// on where the program runs from, so ../results/phase7/margins.csv is caught from anywhere.
+bool passesThroughResultsFolder(const fs::path& path) {
+    const fs::path resolved = fs::weakly_canonical(fs::absolute(path));
+    return std::any_of(resolved.begin(), resolved.end(),
+                       [](const fs::path& part) { return part == "results"; });
+}
+
+// True if path is folder or anything under it, following symlinks.
+bool isInsideFolder(const fs::path& path, const fs::path& folder) {
+    const fs::path relative = fs::weakly_canonical(fs::absolute(path))
+                                  .lexically_relative(fs::weakly_canonical(fs::absolute(folder)));
+    return !relative.empty() && *relative.begin() != "..";
+}
+
+std::vector<MarginRow> readMarginRows(const fs::path& path) {
+    std::vector<MarginRow> rows;
+    std::ifstream in(path);
+    std::string line;
+    if (!std::getline(in, line)) {
+        return rows;  // Empty or new file
+    }
+    if (line != MARGIN_COLUMNS) {
+        throw std::runtime_error(path.string() + " is not a margin report; not overwriting it");
+    }
+    while (std::getline(in, line)) {
+        std::istringstream fields(line);
+        MarginRow row;
+        std::string margin;
+        std::getline(fields, row.program, ',');
+        std::getline(fields, row.window, ',');
+        std::getline(fields, row.family, ',');
+        std::getline(fields, row.symbol, ',');
+        std::getline(fields, row.params, ',');
+        std::getline(fields, margin, ',');
+        std::getline(fields, row.date, ',');
+        std::getline(fields, row.comparison, ',');
+        if (row.comparison.empty()) {
+            throw std::runtime_error(path.string() + " has a malformed row: " + line);
+        }
+        row.margin = std::stod(margin);
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
+}  // namespace
 
 BacktestResult runStrategy(Strategy& strategy, const WindowData& data, double costMultiplier) {
     BacktestConfig config;
@@ -40,7 +211,95 @@ BacktestResult runStrategy(Strategy& strategy, const WindowData& data, double co
     config.riskFreeRate = RISK_FREE_RATE;
     config.fillTiming = FillTiming::NEXT_OPEN;
     config.warmupBars = data.warmupBars;
-    return BacktestEngine(config).run(strategy, data.bars);
+    auto* const probe = dynamic_cast<MarginProbe*>(&strategy);
+    if (probe != nullptr) {
+        probe->startRun(data.window, data.bars.getAssetSymbol());
+    }
+    BacktestResult result = BacktestEngine(config).run(strategy, data.bars);
+    if (probe != nullptr) {
+        probe->finishRun();
+    }
+    return result;
+}
+
+MarginReport::MarginReport(std::string program, const fs::path& path, const fs::path& resultsDir)
+    : program_(std::move(program)), path_(path) {
+    if (passesThroughResultsFolder(path) || isInsideFolder(path, resultsDir)) {
+        throw std::runtime_error("The margin report must be outside the results folders: " +
+                                 path.string());
+    }
+    readMarginRows(path_);  // Refuse a file that isn't a report before the study runs
+    const std::ofstream writable(path_, std::ios::app);
+    if (!writable) {
+        throw std::runtime_error("Cannot write " + path_.string());
+    }
+}
+
+void MarginReport::add(MarginRow row) {
+    rows_.push_back(std::move(row));
+}
+
+const std::vector<MarginRow>& MarginReport::rows() const {
+    return rows_;
+}
+
+const std::string& MarginReport::program() const {
+    return program_;
+}
+
+void MarginReport::write() const {
+    std::vector<MarginRow> all = readMarginRows(path_);
+    all.insert(all.end(), rows_.begin(), rows_.end());
+    std::stable_sort(all.begin(), all.end(),
+                     [](const MarginRow& a, const MarginRow& b) { return a.margin < b.margin; });
+
+    std::ofstream out(path_);
+    if (!out) {
+        throw std::runtime_error("Cannot write " + path_.string());
+    }
+    out << std::setprecision(std::numeric_limits<double>::max_digits10);
+    out << MARGIN_COLUMNS << "\n";
+    for (const MarginRow& row : all) {
+        out << row.program << "," << row.window << "," << row.family << "," << row.symbol << ","
+            << row.params << "," << row.margin << "," << row.date << "," << row.comparison << "\n";
+    }
+
+    std::map<std::string, const MarginRow*> smallest;
+    for (const MarginRow& row : rows_) {
+        const auto found = smallest.find(row.family);
+        if (found == smallest.end() || row.margin < found->second->margin) {
+            smallest[row.family] = &row;
+        }
+    }
+    for (const auto& [family, row] : smallest) {
+        std::cerr << "Smallest decision margin, " << family << ": " << row->margin << " ("
+                  << row->comparison << ", " << row->symbol << " " << row->date << ", "
+                  << row->window << ", " << row->params << ")\n";
+    }
+}
+
+std::optional<MarginReport> marginReportFromEnvironment(const std::string& program,
+                                                        const fs::path& resultsDir) {
+    const char* const path = std::getenv("BARCOLA_MARGIN_REPORT");
+    if (path == nullptr || *path == '\0') {
+        return std::nullopt;
+    }
+    return MarginReport(program, path, resultsDir);
+}
+
+std::vector<Family> withMarginProbes(std::vector<Family> families, MarginReport* report) {
+    if (report == nullptr) {
+        return families;
+    }
+    for (Family& family : families) {
+        family.make = [original = family,
+                       report](const Params& params) -> std::unique_ptr<Strategy> {
+            const MarginRule rule = marginRuleFor(original.name, params);
+            return std::make_unique<MarginProbe>(original.make(params), rule, *report,
+                                                 original.name, paramLabel(original, params));
+        };
+    }
+    return families;
 }
 
 std::string paramLabel(const Family& family, const Params& params) {
