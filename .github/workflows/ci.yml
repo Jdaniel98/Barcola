@@ -190,8 +190,12 @@ jobs:
         run: |
           uname -m
           c++ --version | head -1
+          echo "FMA macros: $(c++ -dM -E - < /dev/null | grep -E '__FMA__|__ARM_FEATURE_FMA' || true)"
           for lib in build/strategies/libbarcola_strategies.a build/src/libbarcola.a; do
-            echo "$lib: $(objdump -d --no-show-raw-insn "$lib" | grep -c fmadd || true)"
+            objdump -d --no-show-raw-insn "$lib" > disassembly.txt
+            echo "$lib: $(grep -c fmadd disassembly.txt || true) lines match fmadd"
+            echo "  of which instructions: $(grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+v?fn?m(add|sub)' disassembly.txt | wc -l)"
+            grep fmadd disassembly.txt | head -6 | cut -c1-150 || true
           done
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -221,3 +225,38 @@ jobs:
         with:
           name: golden-diff
           path: golden.diff
+
+  # Temporary, deleted later in this PR: how far contraction moves the decision values on arm64
+  decision-values-measure:
+    name: Decision values, contraction on vs off (macos-latest)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Build with today's flags
+        run: |
+          cmake -B build-default -DCMAKE_BUILD_TYPE=Release -DBARCOLA_BUILD_TESTS=OFF
+          cmake --build build-default --target decision_values --parallel
+
+      - name: Build with contraction off
+        run: |
+          cmake -B build-off -DCMAKE_BUILD_TYPE=Release -DBARCOLA_BUILD_TESTS=OFF -DCMAKE_CXX_FLAGS=-ffp-contract=off
+          cmake --build build-off --target decision_values --parallel
+
+      - name: Count fused multiply-adds
+        run: |
+          uname -m
+          for build in build-default build-off; do
+            objdump -d --no-show-raw-insn "$build/apps/decision_values" > disassembly.txt
+            echo "$build: $(grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+fn?m(add|sub)' disassembly.txt | wc -l) instructions"
+            grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+fn?m(add|sub)' disassembly.txt | head -6 | cut -c1-100 || true
+          done
+
+      - name: Run both builds
+        run: |
+          build-default/apps/decision_values data/golden > default.txt
+          build-off/apps/decision_values data/golden > off.txt
+          ls -l default.txt off.txt
+
+      - name: Compare
+        run: python3 -I scripts/compare_decision_values.py default.txt off.txt

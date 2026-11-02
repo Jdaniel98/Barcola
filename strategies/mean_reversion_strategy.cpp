@@ -5,6 +5,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "detail/window_stats.h"
+
 namespace barcola {
 
 MeanReversionStrategy::MeanReversionStrategy(size_t lookbackPeriod, double entryZScore,
@@ -43,16 +45,12 @@ Signal MeanReversionStrategy::evaluate(const BarView& bars, Position position) {
         return Signal::HOLD;
     }
 
-    const double z = computeZScore(bars);
+    const double z = detail::zScore(bars, lookback_);
 
     if (position == Position::FLAT && z < -entryZ_) {
         // Price is abnormally low — buy, unless the trend filter says the trend is down
         if (options_.trendWindow > 0) {
-            double sum = 0.0;
-            for (size_t i = bars.size() - options_.trendWindow; i < bars.size(); ++i) {
-                sum += bars[i].getClosing();
-            }
-            const double trend = sum / static_cast<double>(options_.trendWindow);
+            const double trend = detail::trailingMean(bars, options_.trendWindow);
             if (bars.back().getClosing() <= trend) {
                 return Signal::HOLD;
             }
@@ -86,30 +84,6 @@ std::string MeanReversionStrategy::name() const {
     }
     oss << ")";
     return oss.str();
-}
-
-double MeanReversionStrategy::computeZScore(const BarView& bars) const {
-    const size_t end = bars.size();
-    const size_t start = end - lookback_;
-
-    double sum = 0.0;
-    for (size_t i = start; i < end; ++i) {
-        sum += bars[i].getClosing();
-    }
-    const double mean = sum / static_cast<double>(lookback_);
-
-    double sumSqDiff = 0.0;
-    for (size_t i = start; i < end; ++i) {
-        const double diff = bars[i].getClosing() - mean;
-        sumSqDiff += diff * diff;
-    }
-    const double stdDev = std::sqrt(sumSqDiff / static_cast<double>(lookback_));
-
-    if (stdDev < 1e-12) {
-        return 0.0;  // No variance — price is flat
-    }
-
-    return (bars.back().getClosing() - mean) / stdDev;
 }
 
 }  // namespace barcola

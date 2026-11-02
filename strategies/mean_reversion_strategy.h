@@ -42,10 +42,6 @@ private:
     double exitZ_;
     MeanReversionOptions options_;
     std::optional<size_t> entryBar_;  // index of the first bar seen long, while long
-
-    // z-score of the latest close against the mean and standard deviation of the last
-    // lookback_ closes (the latest one included).
-    [[nodiscard]] double computeZScore(const BarView& bars) const;
 };
 
 }  // namespace barcola
