@@ -3,20 +3,9 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "detail/window_stats.h"
+
 namespace barcola {
-
-namespace {
-
-// Mean of the last `window` closes; the caller guarantees bars.size() >= window.
-double trailingMean(const BarView& bars, size_t window) {
-    double sum = 0.0;
-    for (size_t i = bars.size() - window; i < bars.size(); ++i) {
-        sum += bars[i].getClosing();
-    }
-    return sum / static_cast<double>(window);
-}
-
-}  // namespace
 
 MovingAverageCrossoverStrategy::MovingAverageCrossoverStrategy(size_t shortWindow,
                                                                size_t longWindow)
@@ -31,8 +20,8 @@ Signal MovingAverageCrossoverStrategy::evaluate(const BarView& bars, Position po
         return Signal::HOLD;
     }
 
-    const double shortMA = trailingMean(bars, shortWindow_);
-    const double longMA = trailingMean(bars, longWindow_);
+    const double shortMA = detail::trailingMean(bars, shortWindow_);
+    const double longMA = detail::trailingMean(bars, longWindow_);
 
     if (position == Position::FLAT && shortMA > longMA) {
         return Signal::BUY;

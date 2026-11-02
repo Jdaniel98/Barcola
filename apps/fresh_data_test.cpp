@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -138,6 +139,8 @@ std::string verdict(double shareAhead, bool predictFirstAhead) {
 }
 
 int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& universe) {
+    std::optional<MarginReport> marginReport =
+        marginReportFromEnvironment("fresh_data_test", resultsDir);
     const std::vector<PriceHistory> histories = loadExactUniverse(dataDir, universe);
     const time_t lastNeeded = convertDateToEpoch(TEST.end) - END_DATE_TOLERANCE;
     std::vector<WindowData> data;
@@ -154,7 +157,8 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
     fs::create_directories(resultsDir / "charts");
 
     // Run every pre-registered strategy, and buy-and-hold, on the test window
-    const std::vector<Family> fams = families();
+    const std::vector<Family> fams =
+        withMarginProbes(families(), marginReport ? &*marginReport : nullptr);
     std::vector<std::vector<Row>> rowsByStrategy;
     std::vector<std::string> paramsByStrategy;
     for (const auto& family : fams) {
@@ -292,6 +296,9 @@ int run(const fs::path& dataDir, const fs::path& resultsDir, const std::string& 
     writeFile(resultsDir / "charts" / "growth.svg", renderLineChart(growth));
 
     std::cout << "\nResults written to " << resultsDir.string() << "/\n";
+    if (marginReport) {
+        marginReport->write();
+    }
     return 0;
 }
 

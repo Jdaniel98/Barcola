@@ -187,7 +187,7 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 - **Strict checks on every push.** Any compiler warning fails the build (`-Wall -Wextra -Wpedantic -Wshadow -Wconversion`). CI also runs the tests under AddressSanitizer and UndefinedBehaviorSanitizer, checks formatting (clang-format) and lint (a focused clang-tidy set), and measures coverage: the tests run 91% of the lines in the library and strategies.
 - **Known-value tests for the math.** RSI, correlation, volatility, drawdown, annualized return, Bollinger Bands and the backtest's fills and sizing are checked against hand-calculated or independently computed values.
 - **Built to avoid backtest traps.** Strategies cannot see future bars, fills happen the next day, costs apply to every trade, and the engine, not the strategy, is the record of what is held.
-- **Reproducible.** Same data, same results, byte for byte. The Monte Carlo simulation uses a fixed seed and a standard-defined generator.
+- **Reproducible across platforms.** Builds use `-ffp-contract=off`, and CI runs a synthetic golden study on Linux and macOS and checks that every trade and figure matches. One exception: CAGR and Calmar use the platform's `pow()`, which can differ in the last digit. The Monte Carlo simulation and the bootstrap use a fixed seed and raw `mt19937` output, so their random draws are the same everywhere.
 
 ## Roadmap
 
