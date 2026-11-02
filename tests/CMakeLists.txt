@@ -49,3 +49,9 @@ barcola_add_backtest_test(test_mean_reversion_strategy)
 barcola_add_backtest_test(test_buy_and_hold_strategy)
 barcola_add_backtest_test(test_ma_crossover_strategy)
 barcola_add_backtest_test(test_window_stats)
+
+# study_common is part of the study programs, so its test compiles it directly
+add_executable(test_study_common test_study_common.cpp ${PROJECT_SOURCE_DIR}/apps/study_common.cpp)
+target_link_libraries(test_study_common PRIVATE barcola_strategies barcola_warnings GTest::gtest_main)
+target_include_directories(test_study_common PRIVATE ${PROJECT_SOURCE_DIR}/apps)
+add_test(NAME test_study_common COMMAND test_study_common)
