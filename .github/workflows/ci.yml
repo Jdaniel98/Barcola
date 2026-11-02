@@ -35,7 +35,8 @@ jobs:
 
       # ctest hides a passing test's output, so show any last-digit differences it tolerated
       - name: Show the golden comparison
-        run: grep -E "^(warning: |Golden outputs match)" build/Testing/Temporary/LastTest.log
+        run: |
+          grep -E "^(warning: |Golden outputs match)" build/Testing/Temporary/LastTest.log
 
   sanitizers:
     name: Test under AddressSanitizer and UBSan
