@@ -10,6 +10,7 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -74,6 +75,7 @@ struct Row {
 struct WindowData {
     PriceHistory bars;
     size_t warmupBars = 0;
+    std::string window;  // the window's name
 };
 
 // Daily returns of one strategy, one series per symbol. All series must cover the same days.
@@ -154,5 +156,53 @@ void writeSummaryCsv(const fs::path& path, const std::vector<Row>& rows);
 
 // Daily returns of each row's equity curve, one series per symbol.
 ReturnSet returnsOf(const std::string& name, const std::vector<Row>& rows);
+
+// The decision-margin report: how close each run came to deciding the other way on some bar.
+// A last-bit change in the arithmetic can only flip a trade where this margin is tiny.
+// Set BARCOLA_MARGIN_REPORT=<path> to write one; the path must be outside the results folders.
+// Rows already in the file are kept, so one path can collect a whole rerun; delete the file to
+// start over.
+
+struct MarginRow {
+    std::string program;
+    std::string window;
+    std::string family;
+    std::string symbol;
+    std::string params;
+    double margin = 0.0;     // the run's smallest margin
+    std::string date;        // the bar it fell on
+    std::string comparison;  // entry_z, exit_z, trend or crossover
+};
+
+class MarginReport {
+public:
+    // Throws std::runtime_error if path is inside results/ or resultsDir, can't be written, or
+    // already holds something other than a margin report.
+    MarginReport(std::string program, const fs::path& path, const fs::path& resultsDir);
+
+    void add(MarginRow row);
+
+    [[nodiscard]] const std::vector<MarginRow>& rows() const;
+    [[nodiscard]] const std::string& program() const;
+
+    // Writes the CSV, smallest margin first, and prints each family's smallest margin to stderr
+    // (never to stdout, which the study programs' reports are redirected from).
+    void write() const;
+
+private:
+    std::string program_;
+    fs::path path_;
+    std::vector<MarginRow> rows_;
+};
+
+// The report BARCOLA_MARGIN_REPORT asks for; empty if the variable is unset or empty.
+std::optional<MarginReport> marginReportFromEnvironment(const std::string& program,
+                                                        const fs::path& resultsDir);
+
+// With a report: the families, with each strategy wrapped so its runs record their margins. The
+// wrapper returns the strategy's signals unchanged. Without one: the families as they are.
+// The report must outlive the strategies. Making a strategy throws std::runtime_error if its
+// family has no known margin rule.
+std::vector<Family> withMarginProbes(std::vector<Family> families, MarginReport* report);
 
 }  // namespace barcola::study
