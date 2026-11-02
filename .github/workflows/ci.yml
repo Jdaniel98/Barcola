@@ -226,10 +226,15 @@ jobs:
           name: golden-diff
           path: golden.diff
 
-  # Temporary, deleted later in this PR: how far contraction moves the decision values on arm64
+  # Temporary, deleted later in this PR: how far contraction moves the decision values. Both
+  # platforms, because ubuntu-latest's GCC also uses FMA by default and fuses across statements.
   decision-values-measure:
-    name: Decision values, contraction on vs off (macos-latest)
-    runs-on: macos-latest
+    name: Decision values, contraction on vs off (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -248,8 +253,8 @@ jobs:
           uname -m
           for build in build-default build-off; do
             objdump -d --no-show-raw-insn "$build/apps/decision_values" > disassembly.txt
-            echo "$build: $(grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+fn?m(add|sub)' disassembly.txt | wc -l) instructions"
-            grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+fn?m(add|sub)' disassembly.txt | head -6 | cut -c1-100 || true
+            echo "$build: $(grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+v?fn?m(add|sub)' disassembly.txt | wc -l) instructions"
+            grep -E '^[[:space:]]*[0-9a-f]+:[[:space:]]+v?fn?m(add|sub)' disassembly.txt | head -6 | cut -c1-100 || true
           done
 
       - name: Run both builds
