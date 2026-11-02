@@ -1,6 +1,6 @@
 # Barcola
 
-[![CI](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml)
+[![CI](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Jdaniel98/Barcola/badge)](https://scorecard.dev/viewer/?uri=github.com/Jdaniel98/Barcola)
 
 A quantitative trading toolkit written from scratch in C++17, used to answer one question: **do two classic trading strategies, buying sharp dips and following trends, beat simply holding the stock?**
 
