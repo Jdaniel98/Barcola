@@ -199,6 +199,8 @@ CSV columns are matched by header name (`Date`, `Open`, `High`, `Low`, `Close`).
 - [x] **Phase 6:** Robustness: bootstrap intervals, walk-forward, cost sensitivity, 29 Dow stocks ([write-up](docs/phase-6-robustness.md))
 - [x] **Phase 7:** Pre-registered test on fresh 2025–2026 data ([pre-registration](docs/phase-7-preregistration.md), [results](docs/phase-7-results.md))
 - [x] **Phase 8:** Release polish: MIT license, stricter CI (warnings as errors, sanitizers, formatting, lint, coverage), v1.0
+- [x] **Phase 9:** Cleanup, security hardening and floating-point determinism (v2.0.0, v2.0.1)
+- [ ] **Phase 10:** Performance (optional; only on measured evidence)
 
 ## License
 
