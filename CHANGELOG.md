@@ -2,7 +2,7 @@
 
 All notable changes to Barcola are recorded here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.1] - Unreleased
+## [2.0.1] - 2026-11-07
 
 ### Changed
 
