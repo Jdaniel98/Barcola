@@ -2,6 +2,13 @@
 
 [![CI](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jdaniel98/Barcola/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Jdaniel98/Barcola/badge)](https://scorecard.dev/viewer/?uri=github.com/Jdaniel98/Barcola)
 
+**In short**
+
+- **What:** a backtesting toolkit written from scratch in C++17, and a study run with it.
+- **Finding:** buying dips and following trends both trailed buy-and-hold after costs: out of sample, on 29 Dow stocks picked without hindsight, and in a pre-registered test on 2025–2026 data.
+- **Engineering:** 214 tests, warnings as errors, AddressSanitizer and UndefinedBehaviorSanitizer, a fuzz target, 91% line coverage, and golden outputs checked on Linux and macOS in CI.
+- **Workflow:** built phase by phase through pull requests, with Claude Code as a pair programmer; its project conventions are in [CLAUDE.md](CLAUDE.md).
+
 A quantitative trading toolkit written from scratch in C++17, used to answer one question: **do two classic trading strategies, buying sharp dips and following trends, beat simply holding the stock?**
 
 **No.** On six large US stocks and ETFs, with parameters chosen on 2014–2019 and tested unchanged on 2020–2024, after trading costs, buying dips fell well short of holding and following trends came close. A robustness study then checked those results against chance, against re-choosing parameters every year, and on 29 Dow stocks picked without hindsight. It confirmed that buying dips loses. Trend following's near-tie turned out to depend on the six hand-picked stocks: on the Dow, and in every year of the walk-forward test, it trailed holding as well. Finally, a pre-registered test on 21 months of data no study had seen (2025–2026) agreed: every strategy trailed holding, and neither proposed fix for buying dips helped reliably.

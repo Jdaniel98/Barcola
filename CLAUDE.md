@@ -1,9 +1,9 @@
 # Barcola — Project Conventions
 
 ## What This Is
-A C++17 quantitative trading toolkit being transformed from a learning project into a
-quant-grade portfolio piece. The end goal: a fully backtested mean reversion strategy
-on real market data, with verified math, professional engineering, and documented results.
+A C++17 quantitative trading toolkit and the studies run with it: strategies backtested on
+real market data, with verified math, strict engineering checks, and documented results.
+Results are research only, never investment advice.
 
 ## Architecture
 - `src/core/` — Foundational types: PricePoint, PriceHistory, time utilities

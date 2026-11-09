@@ -66,3 +66,6 @@ data/fresh/
 /leak-*
 /oom-*
 /timeout-*
+
+# Python bytecode from the helper scripts
+__pycache__/
