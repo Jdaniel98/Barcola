@@ -7,7 +7,6 @@
 - **What:** a backtesting toolkit written from scratch in C++17, and a study run with it.
 - **Finding:** buying dips and following trends both trailed buy-and-hold after costs: out of sample, on 29 Dow stocks picked without hindsight, and in a pre-registered test on 2025–2026 data.
 - **Engineering:** 214 tests, warnings as errors, AddressSanitizer and UndefinedBehaviorSanitizer, a fuzz target, 91% line coverage, and golden outputs checked on Linux and macOS in CI.
-- **Workflow:** built phase by phase through pull requests, with Claude Code as a pair programmer; its project conventions are in [CLAUDE.md](CLAUDE.md).
 
 A quantitative trading toolkit written from scratch in C++17, used to answer one question: **do two classic trading strategies, buying sharp dips and following trends, beat simply holding the stock?**
 

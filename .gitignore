@@ -69,3 +69,6 @@ data/fresh/
 
 # Python bytecode from the helper scripts
 __pycache__/
+
+# Local AI assistant instructions
+CLAUDE.md
