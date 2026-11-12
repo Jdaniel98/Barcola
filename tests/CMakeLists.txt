@@ -78,6 +78,11 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME test_compare_golden
              COMMAND ${Python3_EXECUTABLE} -I ${CMAKE_CURRENT_SOURCE_DIR}/test_compare_golden.py)
 
+    # docs/index.html is generated from results/ and must be rebuilt when they change
+    add_test(NAME test_explorer_up_to_date
+             COMMAND ${Python3_EXECUTABLE} -I ${PROJECT_SOURCE_DIR}/scripts/build_explorer.py
+                     --check)
+
     if(BARCOLA_BUILD_APPS)
         set(golden_run ${PROJECT_SOURCE_DIR}/scripts/run_golden.sh ${CMAKE_BINARY_DIR})
         set(golden_compare ${Python3_EXECUTABLE} -I ${PROJECT_SOURCE_DIR}/scripts/compare_golden.py

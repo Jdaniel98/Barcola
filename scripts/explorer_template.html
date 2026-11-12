@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barcola Results Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one narrow column of bordered cards under a sticky filter row; white, hairline borders, ink for the benchmark. */
+:root {
+  --bg: #ffffff; --card: #ffffff; --muted: #f4f4f5; --border: #e4e4e7; --grid: #ededf0;
+  --fg: #09090b; --fg2: #52525b; --fg3: #71717a;
+  --s-mr: #2a78d6; --s-ma: #eb6834; --s-mrt: #1baf7a; --s-mrs: #eda100; --s-bh: #18181b;
+  --good-bg: #e7f6e7; --good-fg: #166534; --bad-bg: #fdecec; --bad-fg: #991b1b;
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #09090b; --card: #0c0c0e; --muted: #1b1b1f; --border: #27272a; --grid: #1f1f23;
+    --fg: #fafafa; --fg2: #a1a1aa; --fg3: #8d8d96;
+    --s-mr: #3987e5; --s-ma: #d95926; --s-mrt: #199e70; --s-mrs: #c98500; --s-bh: #e4e4e7;
+    --good-bg: #10291a; --good-fg: #86efac; --bad-bg: #351515; --bad-fg: #fca5a5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #09090b; --card: #0c0c0e; --muted: #1b1b1f; --border: #27272a; --grid: #1f1f23;
+  --fg: #fafafa; --fg2: #a1a1aa; --fg3: #8d8d96;
+  --s-mr: #3987e5; --s-ma: #d95926; --s-mrt: #199e70; --s-mrs: #c98500; --s-bh: #e4e4e7;
+  --good-bg: #10291a; --good-fg: #86efac; --bad-bg: #351515; --bad-fg: #fca5a5;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--border); }
+a:hover { text-decoration-color: var(--fg); }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+header.top { padding: 40px 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap; font-size: 13px; color: var(--fg2); }
+.brand b { color: var(--fg); font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 28px; line-height: 1.2; letter-spacing: -0.025em; font-weight: 600; margin: 6px 0 0; text-wrap: balance; max-width: 22em; }
+.lede { color: var(--fg2); font-size: 15px; max-width: 65ch; margin: 0; }
+.note { font-size: 12.5px; color: var(--fg3); margin: 0; }
+h2 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+h3 { font-size: 13.5px; font-weight: 600; margin: 0; }
+.sub { color: var(--fg2); font-size: 13px; margin: 2px 0 0; max-width: 70ch; }
+
+.filters { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.filters .wrap { display: flex; flex-wrap: wrap; gap: 10px 20px; padding-top: 10px; padding-bottom: 10px; }
+.field { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.field > span { font-size: 12px; color: var(--fg3); }
+.seg { display: inline-flex; background: var(--muted); border-radius: 8px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 13px; font-weight: 500; color: var(--fg2); background: transparent; border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 0 0 1px var(--border); }
+button:focus-visible, a:focus-visible, th[tabindex]:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+main { display: flex; flex-direction: column; gap: 16px; padding: 20px 0 48px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card-head { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 24px; } .card { padding: 16px; } }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 500; white-space: nowrap; background: var(--muted); color: var(--fg2); }
+.pill.good { background: var(--good-bg); color: var(--good-fg); }
+.pill.bad { background: var(--bad-bg); color: var(--bad-fg); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--fg2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.mono { font-family: var(--mono); font-size: 12px; color: var(--fg3); }
+
+.bars { display: grid; grid-template-columns: minmax(120px, 230px) minmax(60px, 1fr) auto; gap: 10px 14px; align-items: center; }
+.bars .name { display: flex; flex-direction: column; min-width: 0; }
+.bars .name b { font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.bars .track { height: 18px; position: relative; border-left: 1px solid var(--border); }
+.bars .fill { position: absolute; left: 0; top: 2px; bottom: 2px; border-radius: 0 4px 4px 0; min-width: 2px; }
+.bars .ref { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 1.5px dashed var(--fg3); }
+.bars .val { display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-variant-numeric: tabular-nums; font-weight: 500; }
+@media (max-width: 560px) { .bars { grid-template-columns: minmax(0, 1fr) auto; } .bars .track { grid-column: 1 / -1; order: 3; } .bars .name { order: 1; } .bars .val { order: 2; } .bars .sep { order: 4; } }
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+th { font-weight: 500; color: var(--fg3); font-size: 12px; }
+tbody tr:last-child td { border-bottom: 0; }
+td.l, th.l { text-align: left; }
+td .sw { margin-right: 8px; }
+
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--font); font-size: 11.5px; fill: var(--fg2); font-variant-numeric: tabular-nums; }
+svg .tick { fill: var(--fg3); font-size: 11px; }
+svg .strong { fill: var(--fg); font-weight: 500; }
+svg .gridl { stroke: var(--grid); stroke-width: 1; }
+svg .zero { stroke: var(--fg3); stroke-width: 1; }
+svg .hit { fill: transparent; cursor: default; }
+svg .rowbg { fill: var(--muted); opacity: 0; }
+svg g.row:hover .rowbg { opacity: 1; }
+#tip { position: fixed; z-index: 20; pointer-events: none; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgb(0 0 0 / .12); padding: 8px 10px; font-size: 12.5px; max-width: 280px; display: none; font-variant-numeric: tabular-nums; }
+#tip b { font-weight: 600; }
+#tip .r { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+#tip .r span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--fg2); }
+#tip .m { font-family: var(--mono); font-size: 11px; color: var(--fg3); }
+
+dl.method { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 20px; margin: 0; font-size: 13px; }
+dl.method dt { color: var(--fg3); }
+dl.method dd { margin: 0; }
+footer { border-top: 1px solid var(--border); padding: 20px 0 40px; color: var(--fg3); font-size: 12.5px; display: flex; gap: 8px 20px; flex-wrap: wrap; justify-content: space-between; }
+@media (prefers-reduced-motion: no-preference) { .bars .fill { transition: width .25s ease; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span><b>Barcola</b> · C++17 backtesting toolkit</span><a href="https://github.com/Jdaniel98/Barcola">github.com/Jdaniel98/Barcola</a></div>
+    <h1>Do buying dips and following trends beat holding the stock?</h1>
+    <p class="lede">No. This page lets you check that answer yourself: switch the universe, the period and the metric, and every table and chart below follows. All figures are after trading costs.</p>
+    <p class="note">Research only. These are historical backtests, not investment advice or a recommendation to buy or sell any security.</p>
+  </header>
+</div>
+
+<div class="filters" role="group" aria-label="Filters">
+  <div class="wrap">
+    <div class="field"><span id="l-u">Universe</span><div class="seg" id="f-u" aria-labelledby="l-u"></div></div>
+    <div class="field"><span id="l-p">Period</span><div class="seg" id="f-p" aria-labelledby="l-p"></div></div>
+    <div class="field"><span id="l-m">Metric</span><div class="seg" id="f-m" aria-labelledby="l-m"></div></div>
+  </div>
+</div>
+
+<div class="wrap">
+<main>
+  <section class="card" aria-labelledby="h-sum">
+    <div class="card-head">
+      <div><h2 id="h-sum"></h2><p class="sub" id="sum-sub"></p></div>
+      <span id="sum-pill"></span>
+    </div>
+    <div class="bars" id="sum-bars"></div>
+    <div class="scroll"><table id="sum-table"></table></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-sym">
+    <div class="card-head">
+      <div><h2 id="h-sym">Symbol by symbol</h2><p class="sub" id="sym-sub"></p></div>
+      <span id="sym-pill"></span>
+    </div>
+    <div class="card-head" style="align-items:center">
+      <div class="field"><span id="l-s">Strategy</span><div class="seg" id="f-s" aria-labelledby="l-s"></div></div>
+      <div class="field"><span id="l-o">Sort</span><div class="seg" id="f-o" aria-labelledby="l-o"></div></div>
+    </div>
+    <div class="legend" id="sym-legend"></div>
+    <div id="sym-chart"></div>
+    <div id="hold-wrap">
+      <h3 id="hold-title"></h3>
+      <p class="sub" id="hold-sub"></p>
+      <div class="scroll" style="margin-top:8px"><table id="hold-table"></table></div>
+    </div>
+  </section>
+
+  <div class="two">
+    <section class="card" aria-labelledby="h-wf">
+      <div><h2 id="h-wf">Walk-forward, year by year</h2><p class="sub" id="wf-sub"></p></div>
+      <div class="legend" id="wf-legend"></div>
+      <div id="wf-chart"></div>
+      <div class="scroll"><table id="wf-table"></table></div>
+    </section>
+    <section class="card" aria-labelledby="h-ci">
+      <div><h2 id="h-ci">Could the gap be luck?</h2><p class="sub">Sharpe ratio of each strategy minus buy-and-hold, with the 95% range from 1,000 block-bootstrap resamples. Left of zero means behind holding.</p></div>
+      <div id="ci-chart"></div>
+    </section>
+  </div>
+
+  <div class="two">
+    <section class="card" aria-labelledby="h-grid">
+      <div><h2 id="h-grid">Every parameter set</h2><p class="sub" id="grid-sub"></p></div>
+      <div class="legend" id="grid-legend"></div>
+      <div id="grid-chart"></div>
+    </section>
+    <section class="card" aria-labelledby="h-cost">
+      <div><h2 id="h-cost">Trading costs</h2><p class="sub">The chosen parameters on 2020–2024 at multiples of the study's costs. 1× is 0.1% commission plus 5 bps slippage on every buy and sell.</p></div>
+      <div class="scroll"><table id="cost-table"></table></div>
+      <p class="note" id="cost-note"></p>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="h-hyp">
+    <div><h2 id="h-hyp">The pre-registered test on fresh data</h2><p class="sub">Four hypotheses were committed to GitHub before any 2025–2026 prices were downloaded, then tested once on January 2025 to September 2026. A hypothesis is supported or contradicted only if one side wins in at least 95% of resamples.</p></div>
+    <div class="scroll"><table id="hyp-table"></table></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-how">
+    <h2 id="h-how">How the test was run</h2>
+    <dl class="method">
+      <dt>Universes</dt><dd>SPY, AAPL, MSFT, JPM, XOM and KO, chosen by hand; and the 29 stocks of the Dow Jones index as of January 2014, picked without hindsight. Each symbol is backtested on its own with $100,000.</dd>
+      <dt>Selection</dt><dd>One parameter set per strategy, chosen by average Sharpe ratio on 2014–2019, then run unchanged on 2020–2024.</dd>
+      <dt>Fills</dt><dd>Decide on the close, fill at the next day's open. Strategies only see bars up to the current one.</dd>
+      <dt>Costs</dt><dd>0.1% commission and 5 bps slippage on every buy and sell. Idle cash earns no interest.</dd>
+      <dt>Data</dt><dd>Daily prices from Tiingo, adjusted for splits and dividends. This page holds summary statistics only, no prices.</dd>
+      <dt>Caveats</dt><dd>The six symbols were chosen with hindsight, which flatters every approach. Each symbol has few trades per period, so averages across symbols mean more than any single row. The fresh-data test covers only 21 months.</dd>
+    </dl>
+  </section>
+</main>
+<footer><span>Generated from the committed results by <span class="mono">scripts/build_explorer.py</span>.</span><a href="https://github.com/Jdaniel98/Barcola#readme">Read the full write-ups</a></footer>
+</div>
+<div id="tip" role="status"></div>
+
+<script>
+const DATA = __DATA__;
+const ST = {
+  MeanReversion: { name: 'Mean reversion', short: 'Mean reversion', c: 'var(--s-mr)', desc: 'Buy sharp dips below the moving average' },
+  MACrossover: { name: 'MA crossover', short: 'MA crossover', c: 'var(--s-ma)', desc: 'Hold while the short average is above the long' },
+  MeanReversionTrend: { name: 'Mean reversion + trend filter', short: '+ trend filter', c: 'var(--s-mrt)', desc: 'Buy dips only above the 200-day average' },
+  MeanReversionTimeStop: { name: 'Mean reversion + time stop', short: '+ time stop', c: 'var(--s-mrs)', desc: 'Sell after 21 trading days' },
+  BuyAndHold: { name: 'Buy-and-hold', short: 'Buy-and-hold', c: 'var(--s-bh)', desc: 'Buy on day one and hold' }
+};
+const ORDER = ['MeanReversion', 'MACrossover', 'MeanReversionTrend', 'MeanReversionTimeStop', 'BuyAndHold'];
+const PERIODS = {
+  in: { tab: 'Selection 2014–2019', text: '2014–2019, the period the parameters were chosen on' },
+  out: { tab: 'Test 2020–2024', text: '2020–2024, out of sample' },
+  fresh: { tab: 'Fresh data 2025–2026', text: 'January 2025 to September 2026, the pre-registered test' }
+};
+const METRICS = {
+  cagr: { tab: 'CAGR', name: 'annual return (CAGR)', pct: true, better: 1 },
+  sharpe: { tab: 'Sharpe ratio', name: 'Sharpe ratio', pct: false, better: 1 },
+  mdd: { tab: 'Max drawdown', name: 'maximum drawdown', pct: true, better: -1 }
+};
+const state = { u: 'six', p: 'out', m: 'sharpe', s: 'MeanReversion', o: 'gap' };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const neg = s => s.replace('-', '−');
+const fPct = (v, d = 1) => neg((v * 100).toFixed(d)) + '%';
+const fNum = v => neg(v.toFixed(2));
+const fmt = (m, v) => METRICS[m].pct ? fPct(v) : fNum(v);
+const fGap = (m, v) => (v > 0 ? '+' : '') + (METRICS[m].pct ? neg((v * 100).toFixed(1)) + ' pts' : fNum(v));
+const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+function fParams(p) {
+  if (!p) return '';
+  const n = (p.match(/-?[\d.]+/g) || []);
+  // "entry_z" and "exit_z" carry no digits in their names, so the matches are the values in order
+  return p.startsWith('lookback') ? `${n[0]}-day average, enter at z ${n[1]}, exit at z ${n[2]}` : `${n[0]}-day over ${n[1]}-day`;
+}
+function niceTicks(lo, hi, n) {
+  const span = hi - lo || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(s => s >= raw);
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, t = [];
+  for (let v = a; v <= b + step / 1e6; v += step) t.push(Math.round(v / step) * step);
+  return t;
+}
+function seg(id, key, opts) {
+  $(id).innerHTML = opts.map(([v, label]) => `<button type="button" data-v="${v}" aria-pressed="${state[key] === v}">${esc(label)}</button>`).join('');
+  $(id).onclick = e => { const b = e.target.closest('button'); if (!b) return; state[key] = b.dataset.v; render(); };
+}
+const tip = $('tip');
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.display = 'block';
+  const r = tip.getBoundingClientRect(); let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+const hideTip = () => { tip.style.display = 'none'; };
+const tipRow = (c, label, val) => `<div class="r"><span><i class="sw" style="background:${c}"></i>${esc(label)}</span><b>${val}</b></div>`;
+function bindTips(root, sel, htmlFor) {
+  root.querySelectorAll(sel).forEach(el => {
+    el.addEventListener('mousemove', e => showTip(e, htmlFor(el)));
+    el.addEventListener('mouseleave', hideTip);
+  });
+}
+const ahead = (m, s, b) => METRICS[m].better > 0 ? s > b : s < b;
+
+function summary(U, rows) {
+  const m = state.m, M = METRICS[m];
+  const sts = ORDER.filter(s => rows.some(r => r.st === s));
+  const agg = sts.map(s => {
+    const x = rows.filter(r => r.st === s);
+    return { st: s, params: x[0].params, cagr: mean(x.map(r => r.cagr)), sharpe: mean(x.map(r => r.sharpe)), mdd: mean(x.map(r => r.mdd)),
+      trades: mean(x.map(r => r.trades)), win: mean(x.map(r => r.win)), exp: mean(x.map(r => r.exp)) };
+  });
+  const bh = agg.find(a => a.st === 'BuyAndHold'), others = agg.filter(a => a.st !== 'BuyAndHold');
+  const wins = others.filter(a => ahead(m, a[m], bh[m]));
+  const verb = m === 'mdd' ? 'had a shallower drawdown than' : 'beat';
+  const count = wins.length === 0 ? (others.length === 2 ? 'Neither strategy' : `None of the ${others.length} strategies`) : wins.length === others.length ? (others.length === 2 ? 'Both strategies' : `All ${others.length} strategies`) : `${wins.length} of ${others.length} strategies`;
+  $('h-sum').textContent = `${count} ${verb} buy-and-hold${m === 'mdd' ? '' : ' on ' + M.name}`;
+  $('sum-sub').textContent = `${U.label}, ${PERIODS[state.p].text}. Average of ${U.n} symbols.` + (m === 'mdd' && wins.length ? ' A shallower drawdown here mostly reflects time spent in cash.' : '');
+  $('sum-pill').innerHTML = '';
+  const max = Math.max(...agg.map(a => Math.max(a[m], 0))) || 1;
+  $('sum-bars').innerHTML = agg.map(a => {
+    const isBh = a.st === 'BuyAndHold', g = a[m] - bh[m], ok = ahead(m, a[m], bh[m]);
+    const pill = isBh ? '<span class="pill">benchmark</span>' : `<span class="pill ${ok ? 'good' : 'bad'}">${ok ? '▲' : '▼'} ${fGap(m, g)} vs hold</span>`;
+    return `<div class="name"><b><i class="sw" style="background:${ST[a.st].c}"></i>${ST[a.st].name}</b><span class="mono">${esc(isBh ? ST[a.st].desc : fParams(a.params))}</span></div>
+      <div class="track"><div class="fill" style="background:${ST[a.st].c};width:${Math.max(a[m], 0) / max * 100}%"></div>${isBh ? '' : `<div class="ref" style="left:${Math.max(bh[m], 0) / max * 100}%" title="Buy-and-hold"></div>`}</div>
+      <div class="val"><span>${fmt(m, a[m])}</span>${pill}</div>`;
+  }).join('');
+  $('sum-table').innerHTML = `<thead><tr><th>Strategy</th><th>CAGR</th><th>Sharpe</th><th>Max drawdown</th><th>Trades per symbol</th><th>Win rate</th><th>Time in market</th></tr></thead><tbody>` +
+    agg.map(a => `<tr><td><i class="sw" style="background:${ST[a.st].c}"></i>${ST[a.st].name}</td><td>${fPct(a.cagr)}</td><td>${fNum(a.sharpe)}</td><td>${fPct(a.mdd)}</td><td>${a.st === 'BuyAndHold' ? '1' : a.trades.toFixed(1)}</td><td>${a.st === 'BuyAndHold' ? '–' : fPct(a.win, 0)}</td><td>${fPct(a.exp, 0)}</td></tr>`).join('') + '</tbody>';
+  return sts.filter(s => s !== 'BuyAndHold');
+}
+
+function symbols(U, rows) {
+  const m = state.m, M = METRICS[m], s = state.s, el = $('sym-chart');
+  const bh = Object.fromEntries(rows.filter(r => r.st === 'BuyAndHold').map(r => [r.sym, r]));
+  let d = rows.filter(r => r.st === s).map(r => ({ sym: r.sym, v: r[m], b: bh[r.sym][m], g: r[m] - bh[r.sym][m], r }));
+  d.sort(state.o === 'gap' ? (a, b) => (b.g - a.g) * M.better : (a, b) => a.sym.localeCompare(b.sym));
+  const nAhead = d.filter(x => ahead(m, x.v, x.b)).length;
+  $('sym-pill').innerHTML = `<span class="pill ${nAhead > d.length / 2 ? 'good' : nAhead === 0 ? 'bad' : ''}">Ahead of holding on ${nAhead} of ${d.length}</span>`;
+  $('sym-sub').textContent = `${ST[s].name} against buy-and-hold on each symbol, by ${M.name}. ${m === 'mdd' ? 'Further left is a shallower drawdown.' : 'Further right is better.'}`;
+  $('sym-legend').innerHTML = `<span><i class="sw" style="background:${ST[s].c};border-radius:50%"></i>${ST[s].name}</span><span><i class="sw" style="background:var(--s-bh);border-radius:50%"></i>Buy-and-hold</span>`;
+  const W = Math.max(el.clientWidth, 280), L = 48, Rm = 78, T = 24, rh = 24, H = T + d.length * rh + 6;
+  const all = d.flatMap(x => [x.v, x.b]), ticks = niceTicks(Math.min(...all, 0), Math.max(...all), W < 480 ? 3 : 6);
+  const lo = ticks[0], hi = ticks[ticks.length - 1], x = v => L + (v - lo) / (hi - lo) * (W - L - Rm);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ST[s].name)} against buy-and-hold by symbol, ${M.name}">`;
+  ticks.forEach(t => { g += `<line class="${t === 0 ? 'zero' : 'gridl'}" x1="${x(t)}" x2="${x(t)}" y1="${T - 4}" y2="${H - 4}"/><text class="tick" x="${x(t)}" y="${T - 10}" text-anchor="middle">${fmt(m, t).replace('.00', '').replace('.0%', '%')}</text>`; });
+  g += `<text class="tick" x="${W}" y="${T - 10}" text-anchor="end">vs hold</text>`;
+  d.forEach((r, i) => {
+    const y = T + i * rh + rh / 2, ok = ahead(m, r.v, r.b);
+    g += `<g class="row" data-i="${i}"><rect class="rowbg" x="0" y="${y - rh / 2 + 1}" width="${W}" height="${rh - 2}" rx="4"/>
+      <text x="0" y="${y + 4}" class="strong">${r.sym}</text>
+      <line x1="${x(r.v)}" x2="${x(r.b)}" y1="${y}" y2="${y}" stroke="var(--fg3)" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+      <circle cx="${x(r.b)}" cy="${y}" r="5" fill="var(--s-bh)" stroke="var(--card)" stroke-width="2"/>
+      <circle cx="${x(r.v)}" cy="${y}" r="5" fill="${ST[s].c}" stroke="var(--card)" stroke-width="2"/>
+      <text x="${W}" y="${y + 4}" text-anchor="end" class="${ok ? 'strong' : ''}">${ok ? '▲ ' : ''}${fGap(m, r.g)}</text>
+      <rect class="hit" x="0" y="${y - rh / 2}" width="${W}" height="${rh}"/></g>`;
+  });
+  el.innerHTML = g + '</svg>';
+  bindTips(el, 'g.row', n => { const r = d[+n.dataset.i]; return `<b>${r.sym}</b>${tipRow(ST[s].c, ST[s].name, fmt(m, r.v))}${tipRow('var(--s-bh)', 'Buy-and-hold', fmt(m, r.b))}<div class="r"><span>Trades · win rate</span><b>${r.r.trades} · ${fPct(r.r.win, 0)}</b></div><div class="r"><span>Time in market</span><b>${fPct(r.r.exp, 0)}</b></div>`; });
+  const h = (U.hold[s] || {})[state.p];
+  $('hold-wrap').style.display = h ? '' : 'none';
+  if (h) {
+    $('hold-title').textContent = `${ST[s].name}: trades by how long they were held`;
+    $('hold-sub').textContent = s === 'MeanReversion' ? 'Dips that recover quickly nearly always win. The strategy never cuts a loss, so the trades still open after a month are mostly losers.' : 'Trend following loses small on the trades it exits early and earns on the few it holds for months.';
+    $('hold-table').innerHTML = '<thead><tr><th>Held</th><th>Trades</th><th>Win rate</th><th>Average return</th></tr></thead><tbody>' + h.map(r => `<tr><td>${r.held.replace('-', '–')}</td><td>${r.trades}</td><td>${fPct(r.win)}</td><td>${fPct(r.avg)}</td></tr>`).join('') + '</tbody>';
+  }
+}
+
+function walk(U) {
+  const el = $('wf-chart'), d = U.walk, S = [['mr', 'MeanReversion'], ['ma', 'MACrossover'], ['bh', 'BuyAndHold']];
+  $('wf-sub').textContent = `Each year's parameters are re-chosen on the three years before it, then run on that year alone. Sharpe ratio, average of ${U.n} symbols.`;
+  $('wf-legend').innerHTML = S.map(([, s]) => `<span><i class="sw" style="background:${ST[s].c}"></i>${ST[s].name}</span>`).join('');
+  const W = Math.max(el.clientWidth, 280), H = 250, L = 34, Rm = 12, T = 10, B = 24;
+  const all = d.flatMap(r => [r.mr, r.ma, r.bh]), ticks = niceTicks(Math.min(...all), Math.max(...all), 5);
+  const lo = ticks[0], hi = ticks[ticks.length - 1];
+  const x = i => L + i / (d.length - 1) * (W - L - Rm), y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Walk-forward Sharpe ratio by year">`;
+  ticks.forEach(t => { g += `<line class="${Math.abs(t) < 1e-9 ? 'zero' : 'gridl'}" x1="${L}" x2="${W - Rm}" y1="${y(t)}" y2="${y(t)}"/><text class="tick" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${neg(String(+t.toFixed(2)))}</text>`; });
+  d.forEach((r, i) => { if (W > 420 || i % 2 === 0) g += `<text class="tick" x="${x(i)}" y="${H - 6}" text-anchor="middle">${r.year}</text>`; });
+  S.forEach(([k, s]) => {
+    g += `<path d="${d.map((r, i) => (i ? 'L' : 'M') + x(i) + ' ' + y(r[k])).join('')}" fill="none" stroke="${ST[s].c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    g += d.map((r, i) => `<circle cx="${x(i)}" cy="${y(r[k])}" r="3" fill="${ST[s].c}" stroke="var(--card)" stroke-width="1.5"/>`).join('');
+  });
+  g += `<line id="wf-x" y1="${T}" y2="${H - B}" stroke="var(--fg3)" stroke-width="1" visibility="hidden"/><rect class="hit" id="wf-hit" x="${L}" y="${T}" width="${W - L - Rm}" height="${H - T - B}"/></svg>`;
+  el.innerHTML = g;
+  const hit = el.querySelector('#wf-hit'), xl = el.querySelector('#wf-x');
+  hit.addEventListener('mousemove', e => {
+    const b = hit.getBoundingClientRect(), i = Math.max(0, Math.min(d.length - 1, Math.round((e.clientX - b.left) / b.width * (d.length - 1)))), r = d[i];
+    xl.setAttribute('x1', x(i)); xl.setAttribute('x2', x(i)); xl.setAttribute('visibility', 'visible');
+    showTip(e, `<b>${r.year}</b>${tipRow(ST.MeanReversion.c, 'Mean reversion', fNum(r.mr))}<div class="m">${esc(fParams(r.mrP))}</div>${tipRow(ST.MACrossover.c, 'MA crossover', fNum(r.ma))}<div class="m">${esc(fParams(r.maP))}</div>${tipRow(ST.BuyAndHold.c, 'Buy-and-hold', fNum(r.bh))}`);
+  });
+  hit.addEventListener('mouseleave', () => { xl.setAttribute('visibility', 'hidden'); hideTip(); });
+  const keyOf = n => n.startsWith('Mean') ? 'MeanReversion' : n.startsWith('MA') ? 'MACrossover' : 'BuyAndHold';
+  $('wf-table').innerHTML = '<thead><tr><th>All test years compounded</th><th>CAGR</th><th>Sharpe</th><th>Years ahead of holding</th></tr></thead><tbody>' +
+    U.walkSum.map(r => `<tr><td><i class="sw" style="background:${ST[keyOf(r.name)].c}"></i>${esc(r.name)}</td><td>${fPct(r.cagr)}</td><td>${fNum(r.sharpe)}</td><td>${r.years === '-' ? '–' : esc(r.years)}</td></tr>`).join('') + '</tbody>';
+}
+
+function intervals(U) {
+  const el = $('ci-chart'), tests = [['out', 'Test 2020–2024'], ['wf', 'Walk-forward 2016–2024'], ['fresh', 'Fresh data 2025–2026']];
+  const rowsD = tests.flatMap(([k, label]) => U.ci[k].map(c => ({ ...c, label, st: c.cmp.startsWith('Mean') ? 'MeanReversion' : 'MACrossover' })));
+  const W = Math.max(el.clientWidth, 280), T = 6, rh = 44, B = 26, H = T + rowsD.length * rh + B;
+  const ticks = niceTicks(Math.min(...rowsD.map(r => r.lo)), Math.max(...rowsD.map(r => r.hi), 0), W < 480 ? 3 : 5);
+  const lo = ticks[0], hi = ticks[ticks.length - 1], x = v => 6 + (v - lo) / (hi - lo) * (W - 12);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sharpe gap to buy-and-hold with 95% ranges">`;
+  ticks.forEach(t => { g += `<line class="${Math.abs(t) < 1e-9 ? 'zero' : 'gridl'}" x1="${x(t)}" x2="${x(t)}" y1="${T}" y2="${H - B}"/><text class="tick" x="${x(t)}" y="${H - 8}" text-anchor="middle">${Math.abs(t) < 1e-9 ? '0, tied' : neg(String(+t.toFixed(2)))}</text>`; });
+  rowsD.forEach((r, i) => {
+    const y0 = T + i * rh, y = y0 + 31, verdict = r.ahead < 0.05 ? 'clearly behind' : r.ahead > 0.95 ? 'clearly ahead' : 'not clear';
+    g += `<g class="row" data-i="${i}"><rect class="rowbg" x="0" y="${y0 + 2}" width="${W}" height="${rh - 4}" rx="4"/>
+      <text x="6" y="${y0 + 17}"><tspan class="strong">${ST[r.st].name}</tspan> · ${r.label}</text>
+      <text x="${W - 6}" y="${y0 + 17}" text-anchor="end" class="${verdict === 'not clear' ? '' : 'strong'}">${verdict}</text>
+      <line x1="${x(r.lo)}" x2="${x(r.hi)}" y1="${y}" y2="${y}" stroke="${ST[r.st].c}" stroke-width="4" stroke-linecap="round" opacity=".35"/>
+      <circle cx="${x(r.gap)}" cy="${y}" r="5" fill="${ST[r.st].c}" stroke="var(--card)" stroke-width="2"/>
+      <rect class="hit" x="0" y="${y0}" width="${W}" height="${rh}"/></g>`;
+  });
+  el.innerHTML = g + '</svg>';
+  bindTips(el, 'g.row', n => { const r = rowsD[+n.dataset.i]; return `<b>${ST[r.st].name}</b> minus buy-and-hold<div class="m">${r.label}</div><div class="r"><span>Sharpe gap</span><b>${fNum(r.gap)}</b></div><div class="r"><span>95% range</span><b>${fNum(r.lo)} to ${fNum(r.hi)}</b></div><div class="r"><span>Ahead in</span><b>${fPct(r.ahead)} of resamples</b></div>`; });
+}
+
+function gridChart(U) {
+  const el = $('grid-chart'), out = U.periods.out, inn = U.periods.in;
+  const bhO = mean(out.filter(r => r.st === 'BuyAndHold').map(r => r.sharpe));
+  const pts = ['MeanReversion', 'MACrossover'].flatMap(s => { const chosen = out.find(r => r.st === s).params; return U.grid[s].map(p => ({ ...p, st: s, chosen: p.p === chosen })); });
+  const beat = s => pts.filter(p => p.st === s && p.o > bhO).length, n = s => pts.filter(p => p.st === s).length;
+  $('grid-sub').textContent = `Average Sharpe ratio of each parameter set on 2014–2019 against the same set on 2020–2024. ${beat('MeanReversion')} of ${n('MeanReversion')} mean-reversion sets and ${beat('MACrossover')} of ${n('MACrossover')} crossover sets beat holding out of sample.`;
+  $('grid-legend').innerHTML = ['MeanReversion', 'MACrossover'].map(s => `<span><i class="sw" style="background:${ST[s].c};border-radius:50%"></i>${ST[s].name}</span>`).join('') + '<span><i class="sw" style="background:transparent;border:2px solid var(--fg);border-radius:50%"></i>Chosen on 2014–2019</span>';
+  const W = Math.max(el.clientWidth, 280), H = 270, L = 38, Rm = 10, T = 16, B = 38;
+  const xt = niceTicks(Math.min(...pts.map(p => p.i)), Math.max(...pts.map(p => p.i)), 5), yt = niceTicks(Math.min(...pts.map(p => p.o), 0), Math.max(...pts.map(p => p.o), bhO), 5);
+  const x = v => L + (v - xt[0]) / (xt[xt.length - 1] - xt[0]) * (W - L - Rm), y = v => T + (yt[yt.length - 1] - v) / (yt[yt.length - 1] - yt[0]) * (H - T - B);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="In-sample against out-of-sample Sharpe ratio for every parameter set">`;
+  yt.forEach(t => { g += `<line class="${Math.abs(t) < 1e-9 ? 'zero' : 'gridl'}" x1="${L}" x2="${W - Rm}" y1="${y(t)}" y2="${y(t)}"/><text class="tick" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${neg(String(+t.toFixed(2)))}</text>`; });
+  xt.forEach(t => { g += `<text class="tick" x="${x(t)}" y="${H - B + 16}" text-anchor="middle">${neg(String(+t.toFixed(2)))}</text>`; });
+  g += `<text class="tick" x="${(L + W - Rm) / 2}" y="${H - 4}" text-anchor="middle">Sharpe on 2014–2019 (selection)</text>`;
+  g += `<line x1="${L}" x2="${W - Rm}" y1="${y(bhO)}" y2="${y(bhO)}" stroke="var(--s-bh)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${L + 6}" y="${y(bhO) - 6}" class="strong">Buy-and-hold on 2020–2024, ${fNum(bhO)}</text>`;
+  pts.sort((a, b) => a.chosen - b.chosen).forEach((p, i) => {
+    g += `<g class="pt" data-i="${i}"><circle cx="${x(p.i)}" cy="${y(p.o)}" r="${p.chosen ? 6 : 4.5}" fill="${ST[p.st].c}" stroke="${p.chosen ? 'var(--fg)' : 'var(--card)'}" stroke-width="2"/><circle class="hit" cx="${x(p.i)}" cy="${y(p.o)}" r="11"/></g>`;
+  });
+  el.innerHTML = g + '</svg>';
+  bindTips(el, 'g.pt', n => { const p = pts[+n.dataset.i]; return `<b>${ST[p.st].name}</b>${p.chosen ? ' · chosen' : ''}<div class="m">${esc(fParams(p.p))}</div><div class="r"><span>Sharpe 2014–2019</span><b>${fNum(p.i)}</b></div><div class="r"><span>Sharpe 2020–2024</span><b>${fNum(p.o)}</b></div>`; });
+}
+
+function costs(U) {
+  $('cost-table').innerHTML = '<thead><tr><th rowspan="2">Costs</th><th colspan="2">Mean reversion</th><th colspan="2">MA crossover</th><th colspan="2">Buy-and-hold</th></tr><tr><th>CAGR</th><th>Sharpe</th><th>CAGR</th><th>Sharpe</th><th>CAGR</th><th>Sharpe</th></tr></thead><tbody>' +
+    U.costs.map(r => `<tr><td>${r.x.replace('x', '×')}${r.x === '1x' ? ' <span class="pill">study</span>' : ''}</td><td>${fPct(r.mrC)}</td><td>${fNum(r.mrS)}</td><td>${fPct(r.maC)}</td><td>${fNum(r.maS)}</td><td>${fPct(r.bhC)}</td><td>${fNum(r.bhS)}</td></tr>`).join('') + '</tbody>';
+  const z = U.costs[0];
+  $('cost-note').textContent = z.mrS < z.bhS && z.maS < z.bhS ? 'Both strategies trail holding even with free trading, so costs are not what sinks them.' : '';
+}
+
+function hypotheses() {
+  const a = DATA.universes.six.hyp, b = DATA.universes.dow.hyp;
+  const cell = h => { const c = h.verdict === 'Supported' ? ['good', '✓'] : h.verdict === 'Contradicted' ? ['bad', '✕'] : ['', '–']; return `<td class="l"><span class="pill ${c[0]}">${c[1]} ${h.verdict}</span></td><td>${(h.gap > 0 ? '+' : '') + fNum(h.gap)}</td><td>${fPct(h.ahead)}</td>`; };
+  $('hyp-table').innerHTML = '<thead><tr><th rowspan="2" class="l">Hypothesis</th><th colspan="3" class="l">Six symbols</th><th colspan="3" class="l">29 Dow stocks</th></tr><tr><th class="l">Verdict</th><th>Sharpe gap</th><th>Ahead in</th><th class="l">Verdict</th><th>Sharpe gap</th><th>Ahead in</th></tr></thead><tbody>' +
+    a.map((h, i) => `<tr><td><span class="mono">${h.id}</span>&nbsp; ${esc(h.text)}</td>${cell(h)}${cell(b[i])}</tr>`).join('') + '</tbody>';
+}
+
+function render() {
+  const U = DATA.universes[state.u], rows = U.periods[state.p];
+  seg('f-u', 'u', Object.entries(DATA.universes).map(([k, v]) => [k, v.short]));
+  seg('f-p', 'p', Object.entries(PERIODS).map(([k, v]) => [k, v.tab]));
+  seg('f-m', 'm', Object.entries(METRICS).map(([k, v]) => [k, v.tab]));
+  const sts = summary(U, rows);
+  if (!sts.includes(state.s)) state.s = 'MeanReversion';
+  seg('f-s', 's', sts.map(s => [s, sts.length > 2 ? (s === 'MeanReversion' || s === 'MACrossover' ? ST[s].name : ST[s].short) : ST[s].name]));
+  seg('f-o', 'o', [['gap', 'Gap to holding'], ['sym', 'A–Z']]);
+  symbols(U, rows); walk(U); intervals(U); gridChart(U); costs(U); hypotheses();
+}
+render();
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+addEventListener('scroll', hideTip, { passive: true });
+</script>
+</body>
+</html>
