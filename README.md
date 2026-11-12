@@ -14,6 +14,8 @@ A quantitative trading toolkit written from scratch in C++17, used to answer one
 
 > **Research only.** These results describe historical backtests. They are not investment advice or a recommendation to buy or sell any security.
 
+**[Explore the results interactively](https://jdaniel98.github.io/Barcola/):** switch the universe, period and metric, and every table and chart follows.
+
 ![Growth of $100,000 in each strategy, 2020–2024](results/charts/growth.svg)
 
 | 2020–2024, out of sample, average of 6 symbols | CAGR | Sharpe | Max drawdown | Time in market |
@@ -91,6 +93,8 @@ build/apps/strategy_study data/market results > results/study_output.md
 scripts/fetch_market_data.sh --out data/dow30 $(grep -v '^#' scripts/universes/dow30_2014.txt)
 build/apps/strategy_study data/dow30 results/dow30 "29 Dow stocks as of 2014" > results/dow30/study_output.md
 ```
+
+`python3 -I scripts/build_explorer.py` rebuilds the [results explorer](https://jdaniel98.github.io/Barcola/) in `docs/index.html` from those outputs; a test fails if the page is out of date.
 
 Each run prints every table in the write-ups and redraws the charts in its `charts/` folder. A rerun reproduces the committed results exactly. Tiingo's terms restrict redistributing its prices, so the downloaded data and the outputs that contain prices (trades and daily equity) are kept out of git.
 

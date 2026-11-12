@@ -4,6 +4,10 @@ All notable changes to Barcola are recorded here. The format is based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- An interactive results explorer, `docs/index.html`: one static page that filters the summary tables and charts by universe, period and metric. `scripts/build_explorer.py` generates it from the committed results, and a test fails if it is out of date. It holds summary statistics only, no prices.
+
 ### Removed
 
 - Dependabot. The pinned GitHub Action versions are now updated by hand.
